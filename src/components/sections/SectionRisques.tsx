@@ -88,8 +88,8 @@ export default function SectionRisques({ projetId, onSave }: Props) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
                 {risques.map((risque) => {
-                    const cImpact = NIVEAU_CONFIG[risque.impact] || { bg: '#F3F4F6', color: '#374151' }
-                    const cProb   = PROB_CONFIG[risque.probabilite] || { bg: '#F3F4F6', color: '#374151' }
+                    const cImpact = NIVEAU_CONFIG[risque.impact ?? ''] || { bg: '#F3F4F6', color: '#374151' }
+                    const cProb   = PROB_CONFIG[risque.probabilite ?? ''] || { bg: '#F3F4F6', color: '#374151' }
 
                     return (
                         <div key={risque.id}
