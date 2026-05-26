@@ -10,11 +10,13 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/superbase/client'
 import type {
-    PartenaireFinancier, PartenaireTechnique,
+    PartenaireFinancier, PartenaireTechnique, TypeOngletPartenaire,
     PartenaireCustom, MethodeRemb,
 } from '@/lib/superbase/types'
 
-type TypeOngletPartenaire = 'financiers' | 'techniques' | 'institutionnels' | 'commerciaux'
+// TypeOngletPartenaire dans types.ts est l'entité DB (avec id/label/ordre)
+// On définit localement le type des onglets de navigation UI
+type OngletNav = 'financiers' | 'techniques' | string
 
 interface Props { projetId: string; onSave: () => void }
 
@@ -32,7 +34,7 @@ const METHODE_LABELS: Record<MethodeRemb, string> = {
 }
 
 export default function SectionPartenaires({ projetId, onSave }: Props) {
-    const [onglet, setOnglet] = useState<TypeOngletPartenaire>('financiers')
+    const [onglet, setOnglet] = useState<OngletNav>('financiers')
     const [fin, setFin]       = useState<PartenaireFinancier[]>([])
     const [tech, setTech]     = useState<PartenaireTechnique[]>([])
     const [custom, setCustom] = useState<PartenaireCustom[]>([])
@@ -95,7 +97,7 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
     }
     const ajouterCustom = async (categorieId: string) => {
         const { data } = await supabase.from('partenaires_custom').insert([{
-            projet_id: projetId, categorie_id: categorieId, nom: 'Nouveau Partenaire', role: 'Description du rôle'
+            projet_id: projetId, onglet_id: categorieId, nom: 'Nouveau Partenaire', role: 'Description du rôle'
         }]).select().single()
         if (data) setCustom(prev => [...prev, data])
     }
@@ -303,7 +305,7 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
             {/* --- ONGLETS PERSONNALISÉS (INSTITUTIONNELS / COMMERCIAUX) --- */}
             {listCustomCategories.map(og => {
                 if (onglet !== og.id) return null
-                const filtered = custom.filter(c => c.categorie_id === og.id)
+                const filtered = custom.filter(c => c.onglet_id === og.id)
                 return (
                     <div key={og.id}>
                         <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: '16px' }}>{og.label}</h3>
