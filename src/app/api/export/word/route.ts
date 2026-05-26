@@ -140,9 +140,9 @@ export async function GET(req: NextRequest) {
                             // Approche standard : PageNumber.CURRENT et PageNumber.TOTAL_PAGES placés directement dans children
                             children: [
                                 new TextRun({ text: "Page ", font: "Calibri", size: 18, color: DGRAY }),
-                                PageNumber.CURRENT,
+                                new TextRun({ children: [PageNumber.CURRENT], font: "Calibri", size: 18, color: DGRAY }),
                                 new TextRun({ text: " sur ", font: "Calibri", size: 18, color: DGRAY }),
-                                PageNumber.TOTAL_PAGES
+                                new TextRun({ children: [PageNumber.TOTAL_PAGES], font: "Calibri", size: 18, color: DGRAY }),
                             ]
                         })
                     ]
