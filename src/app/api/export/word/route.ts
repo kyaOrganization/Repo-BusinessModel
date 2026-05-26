@@ -1,5 +1,5 @@
 /**
- * EXPORT WORD — route.ts v3.1 (Corrigé pour Type Check)
+ * EXPORT WORD — route.ts v3.2 (Correction finale Type Check)
  * Fichier : src/app/api/export/word/route.ts
  *
  * Design calqué sur le document de référence KYA-SolDesign :
@@ -18,7 +18,7 @@ import {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
     PageBreak, LevelFormat, Header, Footer, SimpleField,
-    PageNumber, NumberFormat, VerticalAlign // On réutilise VerticalAlign
+    PageNumber, NumberFormat, VerticalAlign
 } from 'docx'
 
 // ── Palette KYA ───────────────────────────────────────────────
@@ -44,11 +44,12 @@ const sep = (color: string) => new Table({
     rows: [new TableRow({ children: [new TableCell({ children: [] })] })]
 })
 
-function cell(text: string, opts: { fill?: string, bold?: boolean, color?: string, size?: number, align?: AlignmentType, vAlign?: any, colspan?: number, width?: number } = {}) {
+// Correction ici : align utilise désormais 'any' pour éviter l'erreur de référence de valeur/type de docx
+function cell(text: string, opts: { fill?: string, bold?: boolean, color?: string, size?: number, align?: any, vAlign?: any, colspan?: number, width?: number } = {}) {
     return new TableCell({
         margins: { top: 100, bottom: 100, left: 160, right: 160 },
         shading: { fill: opts.fill || WHITE, type: ShadingType.CLEAR },
-        // Utilisation du cast 'as any' pour accepter la valeur sans bloquer le build
+        // Utilisation de 'as any' pour bypasser le conflit de type de l'enum VerticalAlign
         verticalAlign: (opts.vAlign || VerticalAlign.CENTER) as any, 
         columnSpan: opts.colspan,
         width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
