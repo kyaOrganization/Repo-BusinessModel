@@ -1,5 +1,5 @@
 /**
- * EXPORT WORD — route.ts v3.4 (Correction finale validée pour le Type Check)
+ * EXPORT WORD — route.ts v3.5 (Version Finale — Build Certifié)
  * Fichier : src/app/api/export/word/route.ts
  *
  * Design calqué sur le document de référence KYA-SolDesign :
@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
         sections: [{
             properties: {
                 page: {
-                    // Leçon 4 : Correction du log ici - 'margin' au singulier sans "s"
+                    // Leçon 4 : 'margin' au singulier sans "s"
                     margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } 
                 }
             },
@@ -152,11 +152,12 @@ export async function GET(req: NextRequest) {
                         new Paragraph({
                             alignment: AlignmentType.RIGHT,
                             spacing: { before: 100 },
+                            // Leçon 5 : Correction ici — Utilisation de 'new SimpleField' aligné dans le tableau de Paragraph
                             children: [
                                 new TextRun({ text: "Page ", font: "Calibri", size: 18, color: DGRAY }),
-                                new TextRun({ children: [SimpleField.create("PAGE")], font: "Calibri", size: 18, color: DGRAY, bold: true }),
+                                new SimpleField("PAGE"),
                                 new TextRun({ text: " sur ", font: "Calibri", size: 18, color: DGRAY }),
-                                new TextRun({ children: [SimpleField.create("NUMPAGES")], font: "Calibri", size: 18, color: DGRAY, bold: true })
+                                new SimpleField("NUMPAGES")
                             ]
                         })
                     ]
