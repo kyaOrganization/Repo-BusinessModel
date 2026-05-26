@@ -16,7 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/superbase/server' // Retenu selon ta structure exacte
+import { createClient } from '@/lib/superbase/server' 
 import pptxgen from 'pptxgenjs'
 
 // ── Palette ───────────────────────────────────────────────────
@@ -123,10 +123,10 @@ export async function GET(req: NextRequest) {
             fontSize: 36, bold: true, color: ORANGE, fontFace: "Calibri"
         })
 
-        // Sous-titre Business Model
+        // Sous-titre Business Model (Retrait de charSpacing qui n'existe pas en typage strict)
         s.addText("DOSSIER DE PRÉSENTATION STRATÉGIQUE & FINANCIÈRE", {
             x: 1.0, y: 3.1, w: SW - 2, h: 0.4,
-            fontSize: 14, bold: true, color: WHITE, fontFace: "Calibri", charSpacing: 2
+            fontSize: 14, bold: true, color: WHITE, fontFace: "Calibri"
         })
 
         // Description / Pitch de l'entreprise
@@ -217,33 +217,33 @@ export async function GET(req: NextRequest) {
         // Tableau des projections annuelles (5 ans max)
         const items = (results || []).slice(0, 5)
         if (items.length > 0) {
-            const tableRows: any[][] = []
+            const tableRows: pptxgen.TableCell[][] = []
             
             // Ligne d'en-tête du tableau
-            const headerRow = [{ text: "Indicateur (FCFA)", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11 } }]
+            const headerRow: pptxgen.TableCell[] = [{ text: "Indicateur (FCFA)", options: { fill: { color: NAVY }, color: WHITE, bold: true, fontSize: 11 } }]
             items.forEach(it => {
-                headerRow.push({ text: `Année ${it.annee}`, options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "right" as HAlign } })
+                headerRow.push({ text: `Année ${it.annee}`, options: { fill: { color: NAVY }, color: WHITE, bold: true, fontSize: 11, align: "right" } })
             })
             tableRows.push(headerRow)
 
             // Ligne Chiffre d'Affaires
-            const caRow: any[] = [{ text: "Chiffre d'Affaires", options: { bold: true, fontSize: 10, fill: LGRAY } }]
-            items.forEach(it => caRow.push({ text: fmt(it.chiffre_affaires), options: { fontSize: 10, align: "right" as HAlign, fill: LGRAY } }))
+            const caRow: pptxgen.TableCell[] = [{ text: "Chiffre d'Affaires", options: { bold: true, fontSize: 10, fill: { color: LGRAY } } }]
+            items.forEach(it => caRow.push({ text: fmt(it.chiffre_affaires), options: { fontSize: 10, align: "right", fill: { color: LGRAY } } }))
             tableRows.push(caRow)
 
             // Ligne EBITDA
-            const ebitdaRow: any[] = [{ text: "EBITDA", options: { bold: true, fontSize: 10 } }]
-            items.forEach(it => ebitdaRow.push({ text: fmt(it.ebitda), options: { fontSize: 10, align: "right" as HAlign } }))
+            const ebitdaRow: pptxgen.TableCell[] = [{ text: "EBITDA", options: { bold: true, fontSize: 10 } }]
+            items.forEach(it => ebitdaRow.push({ text: fmt(it.ebitda), options: { fontSize: 10, align: "right" } }))
             tableRows.push(ebitdaRow)
 
             // Ligne Résultat Net
-            const rnRow: any[] = [{ text: "Résultat Net", options: { bold: true, fontSize: 10, fill: LGRAY } }]
-            items.forEach(it => rnRow.push({ text: fmt(it.resultat_net), options: { fontSize: 10, align: "right" as HAlign, fill: LGRAY } }))
+            const rnRow: pptxgen.TableCell[] = [{ text: "Résultat Net", options: { bold: true, fontSize: 10, fill: { color: LGRAY } } }]
+            items.forEach(it => rnRow.push({ text: fmt(it.resultat_net), options: { fontSize: 10, align: "right", fill: { color: LGRAY } } }))
             tableRows.push(rnRow)
 
             // Ligne Trésorerie Fin d'année
-            const cashRow: any[] = [{ text: "Trésorerie Clôture", options: { bold: true, fontSize: 10 } }]
-            items.forEach(it => cashRow.push({ text: fmt(it.tresorerie_cumulee), options: { fontSize: 10, align: "right" as HAlign } }))
+            const cashRow: pptxgen.TableCell[] = [{ text: "Trésorerie Clôture", options: { bold: true, fontSize: 10 } }]
+            items.forEach(it => cashRow.push({ text: fmt(it.tresorerie_cumulee), options: { fontSize: 10, align: "right" } }))
             tableRows.push(cashRow)
 
             s.addTable(tableRows, {
@@ -340,22 +340,22 @@ export async function GET(req: NextRequest) {
         if (list.length === 0) {
             s.addText("Aucun risque spécifique modélisé.", { x: 1.0, y: 3.0, w: SW - 2, h: 1.0, fontSize: 14, color: DGRAY, fontFace: "Calibri", align: "center" as HAlign })
         } else {
-            const tRows: any[][] = [
+            const tRows: pptxgen.TableCell[][] = [
                 [
-                    { text: "Description du Risque", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11 } },
-                    { text: "Probabilité", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "center" as HAlign } },
-                    { text: "Impact", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "center" as HAlign } },
-                    { text: "Stratégie d'Atténuation / Contingence", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11 } }
+                    { text: "Description du Risque", options: { fill: { color: NAVY }, color: WHITE, bold: true, fontSize: 11 } },
+                    { text: "Probabilité", options: { fill: { color: NAVY }, color: WHITE, bold: true, fontSize: 11, align: "center" } },
+                    { text: "Impact", options: { fill: { color: NAVY }, color: WHITE, bold: true, fontSize: 11, align: "center" } },
+                    { text: "Stratégie d'Atténuation / Contingence", options: { fill: { color: NAVY }, color: WHITE, bold: true, fontSize: 11 } }
                 ]
             ]
 
             list.forEach((r, idx) => {
                 const bg = idx % 2 === 0 ? WHITE : LGRAY
                 tRows.push([
-                    { text: r.description, options: { fill: bg, fontSize: 10 } },
-                    { text: r.probabilite.toUpperCase(), options: { fill: bg, fontSize: 10, bold: true, align: "center" as HAlign, color: r.probabilite === 'forte' ? "991B1B" : "854F0B" } },
-                    { text: r.impact.toUpperCase(), options: { fill: bg, fontSize: 10, bold: true, align: "center" as HAlign, color: ['eleve','critique'].includes(r.impact) ? "991B1B" : "854F0B" } },
-                    { text: r.mesure_attenuation || "Suivi régulier des indicateurs.", options: { fill: bg, fontSize: 10 } }
+                    { text: r.description, options: { fill: { color: bg }, fontSize: 10 } },
+                    { text: r.probabilite.toUpperCase(), options: { fill: { color: bg }, fontSize: 10, bold: true, align: "center", color: r.probabilite === 'forte' ? "991B1B" : "854F0B" } },
+                    { text: r.impact.toUpperCase(), options: { fill: { color: bg }, fontSize: 10, bold: true, align: "center", color: ['eleve','critique'].includes(r.impact) ? "991B1B" : "854F0B" } },
+                    { text: r.mesure_attenuation || "Suivi régulier des indicateurs.", options: { fill: { color: bg }, fontSize: 10 } }
                 ])
             })
 
