@@ -170,8 +170,6 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
             <div style={{ display: 'flex', borderBottom: '1px solid #E5E7EB', marginBottom: '24px' }}>
                 <button onClick={() => setOnglet('financiers')} style={tabStyle(onglet === 'financiers')}>Partenaires Financiers</button>
                 <button onClick={() => setOnglet('techniques')} style={tabStyle(onglet === 'techniques')}>Partenaires Techniques</button>
-                <button onClick={() => setOnglet('institutionnels')} style={tabStyle(onglet === 'institutionnels')}>Institutionnels</button>
-                <button onClick={() => setOnglet('commerciaux')} style={tabStyle(onglet === 'commerciaux')}>Commerciaux</button>
             </div>
 
             {/* --- ONGLET FINANCIERS --- */}
@@ -330,37 +328,7 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
                 </div>
             )}
 
-            {/* --- ONGLETS PERSONNALISÉS (INSTITUTIONNELS / COMMERCIAUX) --- */}
-            {listCustomCategories.map(og => {
-                if (onglet !== og.id) return null
-                const filtered = custom.filter(c => c.onglet_id === og.id)
-                return (
-                    <div key={og.id}>
-                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: '16px' }}>{og.label}</h3>
-
-                        {filtered.map(p => (
-                            <div key={p.id} style={{ display: 'flex', gap: '16px', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '14px', marginBottom: '12px', backgroundColor: '#fff', alignItems: 'flex-end' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Nom de l'organisation / Structure</label>
-                                    <input type="text" value={p.nom} onChange={e => updateCustom(og.id, p.id, 'nom', e.target.value)} style={inp} />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Rôle</label>
-                                    <input type="text" value={p.role ?? ''} onChange={e => updateCustom(og.id, p.id, 'role', e.target.value)} style={inp} />
-                                </div>
-                                <button onClick={() => supprimerCustom(p.id)}
-                                        style={{ padding: '8px 12px', backgroundColor: '#FFF5F5', border: '1px solid #FEE2E2', color: '#DC2626', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                                    Retirer
-                                </button>
-                            </div>
-                        ))}
-                        <button onClick={() => ajouterCustom(og.id)}
-                                style={{ padding: '8px 18px', fontSize: '13px', fontWeight: 500, color: '#0D2B55', backgroundColor: '#E6F1FB', border: '1px dashed #0D2B55', borderRadius: '10px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                            + Ajouter un partenaire
-                        </button>
-                    </div>
-                )
-            })}
+        
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
                 {saved && <span style={{ fontSize: '13px', color: '#169B86', alignSelf: 'center' }}>Sauvegardé</span>}
