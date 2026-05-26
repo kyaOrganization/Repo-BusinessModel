@@ -186,7 +186,7 @@ export default function SectionImpacts({ projetId, onSave }: Props) {
                                             <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                                                 <button onClick={() => supprimer(item.id)}
                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '16px', fontWeight: 'bold' }}>
-                                                    A
+                                                    x
                                                 </button>
                                             </td>
                                         </tr>
