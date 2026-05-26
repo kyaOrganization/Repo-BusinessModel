@@ -1,15 +1,6 @@
 /**
- * EXPORT WORD — route.ts v3.5 (Version Finale — Build Certifié)
+ * EXPORT WORD — route.ts 
  * Fichier : src/app/api/export/word/route.ts
- *
- * Design calqué sur le document de référence KYA-SolDesign :
- * - Page de garde avec fiche synoptique (tableau bleu navy)
- * - Résumé exécutif
- * - Sections techniques numérotées
- * - Tableaux stylés (en-têtes navy, alternance beige/blanc)
- * - Partie financière : CR, trésorerie, financement, risques
- * - Impacts & ODD
- * - En-tête / pied de page cohérents
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -17,8 +8,7 @@ import { createClient } from '@/lib/superbase/server'
 import {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
-    PageBreak, LevelFormat, Header, Footer, SimpleField,
-    PageNumber, NumberFormat, VerticalAlign
+    Header, Footer, VerticalAlign
 } from 'docx'
 
 // ── Palette KYA ───────────────────────────────────────────────
@@ -26,9 +16,9 @@ const NAVY   = "0D2B55"
 const ORANGE = "F0A02B"
 const TEAL   = "169B86"
 const WHITE  = "FFFFFF"
-const LGRAY  = "F3F4F6"   // alternance lignes paires
+const LGRAY  = "F3F4F6"   
 const DGRAY  = "6B7280"
-const BEIGE  = "FDFBF7"   // Fond de cellule ou appels d'en-tête alternatifs
+const BEIGE  = "FDFBF7"   
 
 // ── Helpers de mise en page & typographie ─────────────────────
 const space = (lines = 1) => new Paragraph({ spacing: { before: lines * 120, after: 0 } })
@@ -48,7 +38,6 @@ function cell(text: string, opts: { fill?: string, bold?: boolean, color?: strin
     return new TableCell({
         margins: { top: 100, bottom: 100, left: 160, right: 160 },
         shading: { fill: opts.fill || WHITE, type: ShadingType.CLEAR },
-        // Leçon 1 : Utilisation de 'as any' pour l'alignement vertical
         verticalAlign: (opts.vAlign || VerticalAlign.CENTER) as any, 
         columnSpan: opts.colspan,
         width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
@@ -59,11 +48,13 @@ function cell(text: string, opts: { fill?: string, bold?: boolean, color?: strin
     })
 }
 
-function h1(text: string) {
+// Adaptation : Ajout du paramètre optional 'pageBreak' pour forcer le saut de page de manière universelle
+function h1(text: string, pageBreak = false) {
     return new Paragraph({
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 360, after: 120 },
         keepNext: true,
+        pageBreakBefore: pageBreak, // Utilisation de la propriété native plutôt que du composant instable PageBreak
         children: [new TextRun({ text, bold: true, color: NAVY, size: 28, font: "Calibri" })]
     })
 }
@@ -79,9 +70,7 @@ function h2(text: string) {
 
 function txt(text: string, bold = false) {
     return new Paragraph({
-        // Leçon 2 : Alignement par JUSTIFIED avec fallback "both"
         alignment: (AlignmentType.JUSTIFIED || "both") as any,
-        // Leçon 3 : L'interligne (line) est encapsulé au cœur de l'objet 'spacing'
         spacing: { 
             before: 60, 
             after: 60, 
@@ -107,7 +96,6 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient()
 
-    // Requêtes Supabase vers l'ensemble de l'écosystème du projet
     const { data: projet }  = await supabase.from('projets').select('*').eq('id', id).single()
     if (!projet) return NextResponse.json({ error: "Projet introuvable" }, { status: 404 })
 
@@ -122,13 +110,11 @@ export async function GET(req: NextRequest) {
     const { data: partTech } = await supabase.from('partenaires_techniques').select('*').eq('projet_id', id)
     const { data: partFin }  = await supabase.from('partenaires_financiers').select('*').eq('projet_id', id)
 
-    // Construction du document DOCX
     const doc = new Document({
         features: { updateFields: true },
         sections: [{
             properties: {
                 page: {
-                    // Leçon 4 : 'margin' au singulier sans "s"
                     margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } 
                 }
             },
@@ -152,12 +138,12 @@ export async function GET(req: NextRequest) {
                         new Paragraph({
                             alignment: AlignmentType.RIGHT,
                             spacing: { before: 100 },
-                            // Leçon 5 : Correction ici — Utilisation de 'new SimpleField' aligné dans le tableau de Paragraph
+                            // Remplacement des SimpleField instables par des codes de champs Word universels en TextRun
                             children: [
                                 new TextRun({ text: "Page ", font: "Calibri", size: 18, color: DGRAY }),
-                                new SimpleField("PAGE"),
+                                new TextRun({ fieldCodes: ["PAGE"], font: "Calibri", size: 18, color: DGRAY, bold: true }),
                                 new TextRun({ text: " sur ", font: "Calibri", size: 18, color: DGRAY }),
-                                new SimpleField("NUMPAGES")
+                                new TextRun({ fieldCodes: ["NUMPAGES"], font: "Calibri", size: 18, color: DGRAY, bold: true })
                             ]
                         })
                     ]
@@ -188,7 +174,6 @@ export async function GET(req: NextRequest) {
                 
                 space(5),
 
-                // Fiche synoptique d'identification (Tableau Navy)
                 new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },
                     borders: {
@@ -231,22 +216,20 @@ export async function GET(req: NextRequest) {
                     ]
                 }),
 
-                new PageBreak(),
-
                 // ════════════════════════════════════════════════
-                // SECTION 1 : RÉSUMÉ EXÉCUTIF & VISION
+                // SECTION 1 : RÉSUMÉ EXÉCUTIF & VISION (Saut de page ici)
                 // ════════════════════════════════════════════════
-                h1("1. Résumé Exécutif & Vision Globale"),
-                txt(projet.description || "Aucune description globale n'a été configurée pour ce business model. Le projet s'ancre dans une volonté forte de transition énergétique et de déploiement de solutions d'ingénierie avancées."),
+                h1("1. Résumé Exécutif & Vision Globale", true),
+                txt(projet.description || "Aucune description globale n'a été configurée pour ce business model."),
                 
                 h2("1.1 Objectifs Cardinaux du Projet"),
-                txt(projet.objectifs || "Les objectifs principaux consistent à structurer une proposition de valeur pérenne, à capter les segments de marché stratégiques identifiés, et à générer une rentabilité financière à court terme capable de rassurer les fonds d'investissement partenaires."),
+                txt(projet.objectifs || "Les objectifs principaux consistent à structurer une proposition de valeur pérenne."),
 
                 // ════════════════════════════════════════════════
                 // SECTION 2 : ÉTUDE DE MARCHÉ (TAM/SAM/SOM)
                 // ════════════════════════════════════════════════
                 h1("2. Dimensionnement & Analyse du Marché Cible"),
-                txt("L'analyse quantitative des segments de marché permet d'isoler la demande globale théorique (TAM) de la part de marché réellement capturable par la structure (SOM) au cours des premiers cycles d'exploitation."),
+                txt("L'analyse quantitative des segments de marché permet d'isoler la demande globale théorique (TAM)."),
                 space(),
 
                 new Table({
@@ -296,7 +279,7 @@ export async function GET(req: NextRequest) {
                 h1("3. Diagnostique Stratégique Environnemental"),
                 
                 h2("3.1 Matrice SWOT (Analyse Interne / Externe)"),
-                txt("La structuration des forces, faiblesses, opportunités et menaces donne une vision macro de l'environnement concurrentiel."),
+                txt("La structuration des forces, faiblesses, opportunités et menaces donne une vision macro."),
                 space(),
 
                 new Table({
@@ -358,16 +341,13 @@ export async function GET(req: NextRequest) {
                     ]
                 }),
 
-                new PageBreak(),
-
                 // ════════════════════════════════════════════════
-                // SECTION 4 : TRAJECTOIRE FINANCIÈRE PROJETÉE
+                // SECTION 4 : TRAJECTOIRE FINANCIÈRE PROJETÉE (Saut de page ici)
                 // ════════════════════════════════════════════════
-                h1("4. Modélisations & Résultats Financiers"),
-                txt("Les tableaux ci-dessous présentent les projections annuelles de l'exploitation, validant la scalabilité et l'évolution de la marge de rentabilité opérationnelle (EBITDA)."),
+                h1("4. Modélisations & Résultats Financiers", true),
+                txt("Les tableaux ci-dessous présentent les projections annuelles de l'exploitation."),
                 space(),
 
-                // Compte de Résultat Simplifié
                 h2("4.1 Compte de Résultat Prévisionnel"),
                 new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -418,10 +398,10 @@ export async function GET(req: NextRequest) {
                 h1("5. Écosystème de Partenariats Stratégiques"),
                 
                 h2("5.1 Alliances Techniques & Industrielles"),
-                ...(partTech && partTech.length > 0 ? partTech.map(pt => txt(`• [${pt.nom}] - Rôle : ${pt.role || 'Aucun rôle explicité'} : ${pt.description || ''}`)) : [txt("Aucun partenaire technique configuré pour le moment. L'exécution repose sur l'infrastructure interne de l'entreprise.")]),
+                ...(partTech && partTech.length > 0 ? partTech.map(pt => txt(`• [${pt.nom}] - Rôle : ${pt.role || 'Aucun rôle explicité'} : ${pt.description || ''}`)) : [txt("Aucun partenaire technique configuré pour le moment.")]),
 
                 h2("5.2 Partenariats et Financements Institutionnels"),
-                ...(partFin && partFin.length > 0 ? partFin.map(pf => txt(`• [${pf.nom}] - Apport : ${fmt(pf.montant)} FCFA (Type : ${pf.type_apport || 'Non défini'})`)) : [txt("Aucune source de financement externe ou partenaire financier tiers répertorié.")]),
+                ...(partFin && partFin.length > 0 ? partFin.map(pf => txt(`• [${pf.nom}] - Apport : ${fmt(pf.montant)} FCFA (Type : ${pf.type_apport || 'Non défini'})`)) : [txt("Aucune source de financement externe répertoriée.")]),
 
                 // ════════════════════════════════════════════════
                 // SECTION 6 : GESTION DES RISQUES & IMPACTS (ODD)
@@ -451,7 +431,7 @@ export async function GET(req: NextRequest) {
                 }),
 
                 h2("6.2 Impacts RSE & Objectifs de Développement Durable (ODD)"),
-                txt("Le projet intègre nativement des critères d'évaluation alignés sur les grands objectifs de développement durable des Nations Unies, notamment sur le plan technologique et écologique."),
+                txt("Le projet intègre nativement des critères d'évaluation alignés sur les grands objectifs de développement durable des Nations Unies."),
                 space(),
 
                 ...(impacts && impacts.length > 0 ? [
@@ -474,7 +454,7 @@ export async function GET(req: NextRequest) {
                         ]
                     })
                 ] : [
-                    txt("L'analyse fine des indicateurs ODD est actuellement en cours de consolidation réglementaire.")
+                    txt("L'analyse fine des indicateurs ODD est actuellement en cours de consolidation.")
                 ]),
 
                 space(),
@@ -486,7 +466,7 @@ export async function GET(req: NextRequest) {
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 200, after: 80 },
-                    children: [new TextRun({ text: `Document généré le ${new Date().toLocaleDateString('fr-FR')} par KYA Business Model`, font: "Calibri", size: 18, color: DGRAY, italics: true })]
+                    children: [new TextRun({ text: `Document généré par KYA Business Model`, font: "Calibri", size: 18, color: DGRAY, italics: true })]
                 }),
                 new Paragraph({
                     alignment: AlignmentType.CENTER,
