@@ -1,43 +1,236 @@
+/**
+ * 10 slides structurées selon le brief :
+ * 1. Présentation KYA-Energy Group
+ * 2. Présentation du projet
+ * 3. Hypothèses clés (TAM/SAM/SOM + marché + financières)
+ * 4. Synthèse financière (CA, EBITDA, ROI, Payback)
+ * 5. Avantages du produit
+ * 6. Go-To-Market Strategy
+ * 7. Analyse des risques
+ * 8. Analyse SWOT
+ * 9. Analyse PESTEL
+ * 10. Call To Action
+ *
+ * Design : palette KYA (Navy #0D2B55 / Orange #F0A02B / Teal #169B86)
+ * Motif : fond blanc, encadrés couleur, typo Calibri, sans émojis
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/superbase/server'
 import pptxgen from 'pptxgenjs'
 import * as fs from 'fs'
 import * as path from 'path'
 
+// ── Palette ───────────────────────────────────────────────────
+const NAVY   = "0D2B55"
 const ORANGE = "F0A02B"
 const TEAL   = "169B86"
-const NAVY   = "0D2B55"
 const WHITE  = "FFFFFF"
-const LGRAY  = "F5F5F5"
+const LGRAY  = "F3F4F6"
+const DGRAY  = "6B7280"
+const NAVY_L = "E6F1FB"
+const TEAL_L = "E1F5EE"
+const ORANGE_L = "FFF3DC"
 
-const formatM   = (n: number) => `${(n / 1_000_000).toFixed(1)} M`
-const formatNum = (n: number) => new Intl.NumberFormat('fr-FR').format(Math.round(n))
+// ── Dimensions slide 16x9 (10" × 5.625") ──────────────────────
+const SW = 10
+const SH = 5.625
 
-function calculerTRI(fluxNets: number[]): number {
-    const van = (taux: number) =>
-        fluxNets.reduce((sum, f, i) => sum + f / Math.pow(1 + taux, i), 0)
-    let lo = -0.5, hi = 10.0
-    if (van(lo) * van(hi) > 0) return 0
-    for (let i = 0; i < 200; i++) {
-        const mid = (lo + hi) / 2
-        if (Math.abs(hi - lo) < 0.0001) return Math.round(mid * 10000) / 100
-        if (van(mid) * van(lo) < 0) hi = mid
-        else lo = mid
-    }
-    return Math.round(((lo + hi) / 2) * 10000) / 100
-}
+// ── Formatage ─────────────────────────────────────────────────
+const fmt    = (n: number) => new Intl.NumberFormat('fr-FR').format(Math.round(n))
+const fmtM   = (n: number) => `${(n / 1_000_000).toFixed(1)} M`
+const fmtPct = (n: number) => `${(n * 100).toFixed(1)}%`
 
+// ── Logo ──────────────────────────────────────────────────────
 function getLogo(): { base64: string; ext: string } | null {
-    const exts = ['png', 'jpg', 'jpeg']
-    for (const ext of exts) {
+    for (const ext of ['png', 'jpg', 'jpeg']) {
         const p = path.join(process.cwd(), 'public', `kya_logo_light.${ext}`)
-        if (fs.existsSync(p)) {
-            return { base64: fs.readFileSync(p).toString('base64'), ext: ext === 'jpg' ? 'jpeg' : ext }
-        }
+        if (fs.existsSync(p)) return { base64: fs.readFileSync(p).toString('base64'), ext: ext === 'jpg' ? 'jpeg' : ext }
     }
     return null
 }
 
+// ── TRI ───────────────────────────────────────────────────────
+function calculerTRI(fluxNets: number[]): number {
+    const van = (r: number) => fluxNets.reduce((s, f, t) => s + f / Math.pow(1 + r, t), 0)
+    let lo = -0.99, hi = 10
+    if (van(lo) * van(hi) > 0) return 0
+    for (let i = 0; i < 200; i++) {
+        const mid = (lo + hi) / 2
+        if (Math.abs(hi - lo) < 0.0001) return mid
+        van(mid) * van(lo) < 0 ? (hi = mid) : (lo = mid)
+    }
+    return (lo + hi) / 2
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS SLIDES
+// ══════════════════════════════════════════════════════════════
+
+type Pres = ReturnType<typeof pptxgen>
+type Slide = ReturnType<Pres['addSlide']>
+
+/**
+ * Header commun : bande navy haut + logo + titre slide + info droite
+ */
+function addHeader(
+    pres: Pres,
+    slide: Slide,
+    title: string,
+    logo: ReturnType<typeof getLogo>,
+    projetNom: string,
+    entrepriseNom: string,
+    slideNum: number,
+    totalSlides = 10,
+) {
+    // Fond header
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x: 0, y: 0, w: SW, h: 0.82,
+        fill: { color: NAVY }, line: { color: NAVY },
+    })
+    // Accent orange
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x: 0, y: 0, w: SW, h: 0.05,
+        fill: { color: ORANGE }, line: { color: ORANGE },
+    })
+
+    // Logo
+    if (logo) {
+        slide.addImage({
+            data: `data:image/${logo.ext};base64,${logo.base64}`,
+            x: 0.18, y: 0.1, w: 0.55, h: 0.55,
+        })
+    }
+
+    // Titre slide (blanc, grand)
+    slide.addText(title, {
+        x: 0.88, y: 0.1, w: 6.5, h: 0.6,
+        fontSize: 20, bold: true, color: WHITE, fontFace: "Calibri",
+        valign: "middle",
+    })
+
+    // Info droite : entreprise + num slide
+    slide.addText(`${entrepriseNom} - ${projetNom}`, {
+        x: 7.4, y: 0.1, w: 2.5, h: 0.3,
+        fontSize: 7, color: "A8C4E0", fontFace: "Calibri",
+        align: "right",
+    })
+    slide.addText(`${slideNum} / ${totalSlides}`, {
+        x: 7.4, y: 0.42, w: 2.5, h: 0.28,
+        fontSize: 8, color: ORANGE, fontFace: "Calibri",
+        align: "right", bold: true,
+    })
+}
+
+/**
+ * Footer commun
+ */
+function addFooter(pres: Pres, slide: Slide, entrepriseNom: string) {
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x: 0, y: SH - 0.32, w: SW, h: 0.32,
+        fill: { color: TEAL }, line: { color: TEAL },
+    })
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x: 0, y: SH - 0.04, w: SW, h: 0.04,
+        fill: { color: ORANGE }, line: { color: ORANGE },
+    })
+    slide.addText(
+        `${entrepriseNom} - Document confidentiel - Généré le ${new Date().toLocaleDateString('fr-FR')}`,
+        { x: 0.3, y: SH - 0.28, w: 9.4, h: 0.22, fontSize: 7, color: WHITE, fontFace: "Calibri", align: "center" }
+    )
+}
+
+/** Zone de contenu disponible : entre le header (0.82) et le footer (SH - 0.32) */
+const CONTENT_Y = 0.88
+const CONTENT_H = SH - 0.32 - CONTENT_Y  // ≈ 4.41"
+
+/**
+ * Titre de section dans la zone de contenu
+ */
+function sectionTitle(slide: Slide, text: string, color = ORANGE, y = CONTENT_Y) {
+    slide.addText(text, {
+        x: 0.3, y, w: SW - 0.6, h: 0.36,
+        fontSize: 13, bold: true, color,
+        fontFace: "Calibri", valign: "middle",
+    })
+}
+
+/**
+ * Carte colorée (encadré avec titre + contenu)
+ */
+function addCard(
+    pres: Pres,
+    slide: Slide,
+    x: number, y: number, w: number, h: number,
+    title: string, body: string | string[],
+    accent = ORANGE,
+    bgColor = WHITE,
+    textColor = "111827",
+) {
+    // Fond
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x, y, w, h,
+        fill: { color: bgColor },
+        line: { color: accent, width: 1.5 },
+        shadow: { type: "outer", blur: 4, offset: 1, angle: 135, color: "000000", opacity: 0.08 },
+    })
+    // Accent haut
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x, y, w, h: 0.07,
+        fill: { color: accent }, line: { color: accent },
+    })
+    // Titre carte
+    slide.addText(title, {
+        x: x + 0.1, y: y + 0.08, w: w - 0.2, h: 0.3,
+        fontSize: 10, bold: true, color: accent, fontFace: "Calibri",
+    })
+    // Corps
+    const bodyItems = Array.isArray(body)
+        ? body.map((t, i) => ({ text: t, options: { bullet: true, breakLine: i < body.length - 1, fontSize: 9, color: textColor, fontFace: "Calibri" } }))
+        : [{ text: body, options: { fontSize: 9, color: textColor, fontFace: "Calibri" } }]
+    slide.addText(bodyItems as any, {
+        x: x + 0.12, y: y + 0.38, w: w - 0.24, h: h - 0.48,
+        valign: "top",
+    })
+}
+
+/**
+ * KPI card grand format
+ */
+function addKpiCard(
+    pres: Pres,
+    slide: Slide,
+    x: number, y: number, w: number, h: number,
+    label: string, value: string, sub: string,
+    color = TEAL,
+) {
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x, y, w, h,
+        fill: { color: WHITE },
+        line: { color: LGRAY, width: 1 },
+        shadow: { type: "outer", blur: 5, offset: 2, angle: 135, color: "000000", opacity: 0.1 },
+    })
+    slide.addShape(pres.shapes.RECTANGLE, {
+        x, y, w, h: 0.08,
+        fill: { color: color }, line: { color: color },
+    })
+    slide.addText(label, {
+        x: x + 0.1, y: y + 0.1, w: w - 0.2, h: 0.25,
+        fontSize: 8, color: DGRAY, fontFace: "Calibri",
+    })
+    slide.addText(value, {
+        x: x + 0.1, y: y + 0.34, w: w - 0.2, h: 0.45,
+        fontSize: 22, bold: true, color, fontFace: "Calibri", align: "center",
+    })
+    slide.addText(sub, {
+        x: x + 0.1, y: y + 0.8, w: w - 0.2, h: 0.2,
+        fontSize: 7, color: DGRAY, fontFace: "Calibri", align: "center",
+    })
+}
+
+// ════════════════════════════════════════════════════════════
+// ROUTE HANDLER
+// ════════════════════════════════════════════════════════════
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const projetId = searchParams.get('projetId')
@@ -45,375 +238,641 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
     const [
-        { data: projet },    { data: profil },
-        { data: hyps },      { data: resultats },
-        { data: partenairesF }, { data: partenairesTech },
-        { data: capex },     { data: opex },
-        { data: risques },   { data: impacts },
-        { data: concurrents }, { data: produits },
-        { data: revenus },
+        { data: projet },
+        { data: profil },
+        { data: produits },
+        { data: hyps },
+        { data: capex },
+        { data: opex },
+        { data: partenaires },
+        { data: concurrents },
+        { data: resultats },
+        { data: risques },
+        { data: impacts },
+        { data: kpis },
     ] = await Promise.all([
         supabase.from('projets').select('*').eq('id', projetId).single(),
         supabase.from('entreprise_profil').select('*').eq('projet_id', projetId).single(),
+        supabase.from('produits').select('*').eq('projet_id', projetId),
         supabase.from('hypotheses').select('*').eq('projet_id', projetId),
-        supabase.from('resultats_financiers').select('*').eq('projet_id', projetId).order('annee'),
-        supabase.from('partenaires_financiers').select('*').eq('projet_id', projetId),
-        supabase.from('partenaires_techniques').select('*').eq('projet_id', projetId),
         supabase.from('capex').select('*').eq('projet_id', projetId),
         supabase.from('opex').select('*').eq('projet_id', projetId),
+        supabase.from('partenaires_financiers').select('*').eq('projet_id', projetId),
+        supabase.from('concurrents').select('*').eq('projet_id', projetId),
+        supabase.from('resultats_financiers').select('*').eq('projet_id', projetId).order('annee'),
         supabase.from('risques_projet').select('*').eq('projet_id', projetId),
         supabase.from('impacts_projet').select('*').eq('projet_id', projetId),
-        supabase.from('concurrents').select('*').eq('projet_id', projetId),
-        supabase.from('produits').select('*').eq('projet_id', projetId),
-        supabase.from('revenus').select('*').eq('projet_id', projetId),
+        supabase.from('kpis_projet').select('*').eq('projet_id', projetId).single(),
     ])
 
     if (!projet) return NextResponse.json({ error: 'Projet introuvable' }, { status: 404 })
 
     const hyp = (cle: string, defaut = 0) => hyps?.find(h => h.cle === cle)?.valeur ?? defaut
 
-    // ── Données calculées ─────────────────────────────────────────────────────
-    const premierRes   = resultats?.[0]
-    const dernierRes   = resultats?.[resultats.length - 1]
-    const totalCA      = (resultats || []).reduce((s, r) => s + r.ca_total, 0)
-    const totalResNet  = (resultats || []).reduce((s, r) => s + r.resultat_net, 0)
-    const totalCapex   = (capex || []).reduce((s, c) => s + c.montant, 0)
-    const totalOpexFixe = (opex || []).filter(o => o.type_calcul === 'fixe').reduce((s, o) => s + o.valeur, 0)
-    const wacc         = hyp('wacc', 0.1)
-    const croissance   = hyp('taux_croissance', 0.25) * 100
-    const marge        = hyp('marge_beneficiaire', 0.204) * 100
-    const fp           = hyp('fonds_propres', 0.2) * 100
-    const empPct       = hyp('emprunts', 0.8) * 100
-    const totalFinancement = (partenairesF || []).reduce((s, p) => s + p.montant, 0)
-    const totalFP      = (partenairesF || []).filter(p => p.type_financement === 'fonds_propres').reduce((s, p) => s + p.montant, 0)
-
-    const anneeDebut   = projet.annee_demarrage || 2026
-    const duree        = projet.duree_projet || 5
-    const anneesFin    = anneeDebut + duree - 1
-
-    // Total unités vendues (depuis revenus)
-    const totalUnites  = (revenus || []).reduce((s, r) => s + r.volume, 0)
-    const prixUnitaire = premierRes && premierRes.ca_total > 0
-        ? premierRes.ca_total / ((revenus || []).filter(r => r.annee === anneeDebut).reduce((s, r) => s + r.volume, 0) || 1)
-        : 0
-
-    const fluxNets  = [-totalCapex, ...(resultats || []).map(r => r.tresorerie)]
-    const tri       = totalCapex > 0 ? calculerTRI(fluxNets) : 0
-    const van       = fluxNets.reduce((sum, f, i) => sum + f / Math.pow(1 + wacc, i), 0)
-
-    const margeBrute = premierRes && premierRes.ca_total > 0
-        ? premierRes.marge_brute / premierRes.ca_total * 100 : 0
-
-    // Seuil de rentabilité
-    const seuilRent = premierRes
-        ? (premierRes.ca_total - premierRes.marge_brute + totalOpexFixe + totalCapex * 0.1)
-        : 0
-
+    // Données calculées
+    const totalCapex = (capex || []).reduce((s, c) => s + c.montant, 0)
+    const totalFin   = (partenaires || []).reduce((s, p) => s + p.montant, 0)
+    const totalFP    = (partenaires || []).filter(p => p.type_financement === 'fonds_propres').reduce((s, p) => s + p.montant, 0)
+    const totalDette = (partenaires || []).filter(p => p.type_financement === 'emprunt').reduce((s, p) => s + p.montant, 0)
+    const r1 = resultats?.[0]
+    const rN = resultats?.[resultats.length - 1]
+    const anneeDebut = projet.annee_demarrage || 2026
+    const duree = projet.duree_projet || 5
+    const ent = profil?.nom_entreprise || 'KYA-Energy Group'
     const logo = getLogo()
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // CRÉATION DU FICHIER PPTX
-    // ══════════════════════════════════════════════════════════════════════════
+    const triVal = kpis?.tri ? kpis.tri : 0
+    const vanVal = kpis?.van ? kpis.van : 0
+    const payback = kpis?.payback_annees || 0
+
+    // ── CRÉATION PPTX ─────────────────────────────────────────
     const pres = new pptxgen()
     pres.layout = 'LAYOUT_16x9'
-    pres.title  = projet.nom || 'Business Model'
+    pres.title  = `${projet.nom} - Business Model`
 
-    // Helper pour en-têtes et footers communs
-    const addHeaderFooter = (slide: ReturnType<typeof pres.addSlide>, slideNum: number) => {
-        // Bande orange haut
-        slide.addShape(pres.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.07, fill: { color: ORANGE }, line: { color: ORANGE } })
-        // Header teal
-        slide.addShape(pres.ShapeType.rect, { x: 0,
-            y: 0.08,
-            w: '100%',
-            h: 1.1,
-            fill: { color: '008080' }, // Couleur TEAL
-            line: { color: '008080' } })
-        // Logo
-        if (logo) {
-            slide.addImage({ data: `data:image/${logo.ext};base64,${logo.base64}`, x: 0.15, y: 0.1, w: 0.7, h: 0.7 })
-        }
-        // Nom projet
-        slide.addText(projet?.nom || 'Business Model', {
-            x: 1.0, y: 0.1, w: 5.5, h: 0.42,
-            fontSize: 17, bold: true, color: WHITE, fontFace: 'Arial'
+    const addSlide = (title: string, num: number) => {
+        const s = pres.addSlide()
+        s.background = { color: WHITE }
+        addHeader(pres, s, title, logo, projet.nom, ent, num)
+        addFooter(pres, s, ent)
+        return s
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 1 - PRÉSENTATION KYA-ENERGY GROUP
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Présentation de ' + ent, 1)
+        const Y = CONTENT_Y + 0.1
+
+        // Bloc gauche : identité
+        addCard(pres, s, 0.25, Y, 4.5, 1.5, 'Notre société', [
+            `Fondée en ${profil?.annee_creation || 2015}`,
+            profil?.localisation || 'Lomé, Togo',
+            profil?.effectif || '30 ingénieurs et techniciens',
+            profil?.certifications || 'ISO 9001:2015',
+        ], NAVY, WHITE)
+
+        addCard(pres, s, 0.25, Y + 1.6, 4.5, 1.5, 'Notre mission', profil?.mission || '-', TEAL, WHITE)
+
+        addCard(pres, s, 0.25, Y + 3.2, 4.5, 0.95, 'Notre vision', profil?.vision || '-', ORANGE, WHITE)
+
+        // Bloc droit : valeurs + slogan
+        addCard(pres, s, 5.0, Y, 4.65, 1.5, 'Nos valeurs', [
+            ...(profil?.valeurs || 'Professionnalisme, Intégrité, Innovation').split(',').map(v => v.trim()).slice(0, 5),
+        ], ORANGE, ORANGE_L)
+
+        addCard(pres, s, 5.0, Y + 1.6, 4.65, 1.5, 'Positionnement', [
+            `Secteur : ${projet.secteur || 'Énergie'}`,
+            profil?.expertise_cle ? profil.expertise_cle.substring(0, 80) : 'Solutions solaires innovantes pour l\'Afrique',
+        ], TEAL, TEAL_L)
+
+        // Slogan central
+        s.addShape(pres.shapes.RECTANGLE, {
+            x: 5.0, y: Y + 3.2, w: 4.65, h: 0.95,
+            fill: { color: NAVY }, line: { color: NAVY },
         })
-        // Infos
-        slide.addText(`${projet?.numero_projet || ''}  ·  ${profil?.nom_entreprise || 'KYA-Energy Group'}  ·  Lancement : ${anneeDebut}  ·  Lomé, Togo  ·  ${profil?.certifications || 'ISO 9001:2015'}`, {
-            x: 1.0, y: 0.54, w: 7.5, h: 0.28,
-            fontSize: 7, color: 'D1FAE5', fontFace: 'Arial'
+        s.addText(`"${profil?.slogan || 'Move beyond the sky !'}"`, {
+            x: 5.1, y: Y + 3.3, w: 4.45, h: 0.75,
+            fontSize: 14, bold: true, color: ORANGE, fontFace: "Calibri",
+            align: "center", italic: true, valign: "middle",
         })
-        // Badges
-        ;['Désirabilité ✓', 'Faisabilité ✓', 'Viabilité ✓'].forEach((b, i) => {
-            slide.addShape(pres.ShapeType.rect, { x: 7.8 + i * 0.74, y: 0.18, w: 0.68, h: 0.22, fill: { color: ORANGE }, line: { color: ORANGE } })
-            slide.addText(b, { x: 7.8 + i * 0.74, y: 0.2, w: 0.68, h: 0.18, fontSize: 6, color: WHITE, fontFace: 'Arial', align: 'center' })
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 2 - PRÉSENTATION DU PROJET
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Présentation du projet', 2)
+        const Y = CONTENT_Y + 0.05
+
+        // Titre projet + badge
+        s.addShape(pres.shapes.RECTANGLE, {
+            x: 0.25, y: Y, w: 9.5, h: 0.52,
+            fill: { color: NAVY_L }, line: { color: NAVY },
         })
-        // Numéro de slide
-        slide.addText(`${slideNum}/2`, { x: 9.6, y: 0.1, w: 0.35, h: 0.22, fontSize: 7, color: 'D1FAE5', fontFace: 'Arial', align: 'right' })
-        // Footer teal
-        slide.addShape(pres.ShapeType.rect, { x: 0, y: 5.22, w: '100%', h: 0.405, fill: { color: TEAL }, line: { color: TEAL } })
-        if (logo) {
-            slide.addImage({ data: `data:image/${logo.ext};base64,${logo.base64}`, x: 0.1, y: 5.24, w: 0.35, h: 0.35 })
-        }
-        slide.addText(
-            `${profil?.nom_entreprise || 'KYA-Energy Group'}  ·  ${profil?.localisation || 'Lomé, Togo'}  ·  Généré le ${new Date().toLocaleDateString('fr-FR')}`,
-            { x: 0.55, y: 5.3, w: 9.1, h: 0.2, fontSize: 7, color: WHITE, fontFace: 'Arial', align: 'center' }
+        s.addText(projet.nom, {
+            x: 0.4, y: Y + 0.06, w: 7, h: 0.4,
+            fontSize: 16, bold: true, color: NAVY, fontFace: "Calibri",
+        })
+        s.addText(`N° ${projet.numero_projet || '—'} - ${anneeDebut}-${anneeDebut + duree - 1}`, {
+            x: 7.4, y: Y + 0.1, w: 2.3, h: 0.32,
+            fontSize: 9, color: DGRAY, fontFace: "Calibri", align: "right",
+        })
+
+        // Description
+        s.addText(projet.description || 'Aucune description renseignée.', {
+            x: 0.25, y: Y + 0.62, w: 9.5, h: 0.6,
+            fontSize: 10, color: "374151", fontFace: "Calibri",
+            wrap: true,
+        })
+
+        // 3 cartes : Description / Persona / Problématique
+        const products = (produits || []).map(p => p.nom).join(', ') || '-'
+        addCard(pres, s, 0.25, Y + 1.3, 2.9, 2.5, 'Produit / Service', [
+            projet.produit_principal || products,
+            `Secteur : ${projet.secteur || '-'}`,
+            `Durée : ${duree} ans`,
+        ], ORANGE, WHITE)
+
+        addCard(pres, s, 3.3, Y + 1.3, 3.1, 2.5, 'Persona', [
+            'Techniciens solaires',
+            'Bureaux d\'études en énergie',
+            'Institutions académiques',
+            'Opérateurs locaux',
+        ], TEAL, WHITE)
+
+        addCard(pres, s, 6.55, Y + 1.3, 3.2, 2.5, 'Problématique', [
+            'Surdimensionnement coûteux (+30-50%)',
+            'Outils inadaptés au marché local',
+            'Barrière économique à l\'adoption',
+            'Manque d\'outils accessibles',
+        ], NAVY, WHITE)
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 3 - HYPOTHÈSES CLÉS
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Hypothèses clés', 3)
+        const Y = CONTENT_Y + 0.05
+
+        // TAM / SAM / SOM
+        const tamY = Y
+        s.addShape(pres.shapes.RECTANGLE, {
+            x: 0.25, y: tamY, w: 9.5, h: 0.35,
+            fill: { color: NAVY }, line: { color: NAVY },
+        })
+        s.addText('Taille de marché', {
+            x: 0.4, y: tamY + 0.05, w: 9.2, h: 0.25,
+            fontSize: 11, bold: true, color: WHITE, fontFace: "Calibri",
+        })
+
+        const markets = [
+            { label: 'TAM', sub: 'Marché total adressable', val: 'Afrique : +20%/an', color: NAVY },
+            { label: 'SAM', sub: 'Marché adressable ciblé', val: 'CEDEAO + Francophonie', color: TEAL },
+            { label: 'SOM', sub: 'Marché capturable', val: `${(hyp('volume_initial', 100) * Math.pow(1 + hyp('taux_croissance', 0.25), duree - 1)).toFixed(0)} clients / an`, color: ORANGE },
+        ]
+        markets.forEach((m, i) => {
+            const mx = 0.25 + i * 3.17
+            s.addShape(pres.shapes.RECTANGLE, {
+                x: mx, y: tamY + 0.4, w: 3.07, h: 1.15,
+                fill: { color: i === 0 ? NAVY_L : i === 1 ? TEAL_L : ORANGE_L },
+                line: { color: m.color, width: 2 },
+            })
+            s.addText(m.label, {
+                x: mx + 0.1, y: tamY + 0.46, w: 1, h: 0.42,
+                fontSize: 22, bold: true, color: m.color, fontFace: "Calibri",
+            })
+            s.addText(m.sub, {
+                x: mx + 0.1, y: tamY + 0.9, w: 2.8, h: 0.22,
+                fontSize: 8, color: DGRAY, fontFace: "Calibri",
+            })
+            s.addText(m.val, {
+                x: mx + 0.1, y: tamY + 1.12, w: 2.8, h: 0.28,
+                fontSize: 9, bold: true, color: m.color, fontFace: "Calibri",
+            })
+        })
+
+        // Hypothèses marché + financières
+        const hypsMarche = (hyps || []).filter(h =>
+            ['taux_croissance', 'volume_initial', 'taux_retention', 'taux_conversion_premium'].includes(h.cle)
         )
-        slide.addShape(pres.ShapeType.rect, { x: 0, y: 5.595, w: '100%', h: 0.03, fill: { color: ORANGE }, line: { color: ORANGE } })
+        const hypsFin = (hyps || []).filter(h =>
+            ['taux_is', 'wacc', 'fonds_propres', 'emprunts', 'marge_beneficiaire'].includes(h.cle)
+        )
+
+        const cardY = tamY + 1.72
+        addCard(pres, s, 0.25, cardY, 4.65, 1.95, 'Hypothèses marché',
+            hypsMarche.length > 0
+                ? hypsMarche.map(h => `${h.description || h.cle} : ${h.unite?.includes('%') ? `${(h.valeur * 100).toFixed(1)}%` : String(h.valeur)} ${h.unite || ''}`)
+                : ['Taux de croissance : 25%/an', 'Rétention : 85%', 'Volume initial : 100 unités', 'Taux de conversion : 20%'],
+            TEAL, WHITE)
+
+        addCard(pres, s, 5.1, cardY, 4.65, 1.95, 'Hypothèses financières',
+            hypsFin.length > 0
+                ? hypsFin.map(h => `${h.description || h.cle} : ${h.unite?.includes('%') ? `${(h.valeur * 100).toFixed(1)}%` : String(h.valeur)} ${h.unite || ''}`)
+                : ['WACC : 10%', 'IS : 27%', 'Fonds propres : 30%', 'Emprunt : 70%', 'Marge : 20%'],
+            ORANGE, WHITE)
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // SLIDE 1 — BUSINESS MODEL CANVAS
-    // ══════════════════════════════════════════════════════════════════════════
-    const slide1 = pres.addSlide()
-    addHeaderFooter(slide1, 1)
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 4 - SYNTHÈSE FINANCIÈRE
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Synthèse financière', 4)
+        const Y = CONTENT_Y + 0.1
 
-    // Proposition de valeur
-    slide1.addShape(pres.ShapeType.rect, { x: 0, y: 0.92, w: '100%', h: 0.38, fill: { color: ORANGE }, line: { color: ORANGE } })
-    slide1.addText(`Proposition de Valeur  |  ${profil?.slogan || projet.produit_principal || '—'}`, {
-        x: 0.2, y: 0.96, w: 9.6, h: 0.3,
-        fontSize: 10, bold: true, color: WHITE, fontFace: 'Arial', align: 'center'
-    })
+        // KPIs principaux - 4 grandes cartes
+        const kpiRow = [
+            { label: 'CA An 1', value: r1 ? `${fmtM(r1.ca_total)} FCFA` : '—', sub: `Cible An ${anneeDebut}`, color: NAVY },
+            { label: `CA An ${duree}`, value: rN ? `${fmtM(rN.ca_total)} FCFA` : '—', sub: `Cible An ${anneeDebut + duree - 1}`, color: TEAL },
+            { label: 'EBITDA (fin)', value: rN ? `${fmtM(rN.ebitda)} FCFA` : '—', sub: `An ${anneeDebut + duree - 1}`, color: rN && rN.ebitda > 0 ? TEAL : "E24B4A" },
+            { label: 'TRI', value: triVal > 0 ? `${(triVal * 100).toFixed(1)}%` : '—', sub: 'Taux de rentabilité', color: triVal > 0.15 ? TEAL : ORANGE },
+            { label: 'VAN', value: vanVal > 0 ? `${fmtM(vanVal)} FCFA` : '—', sub: 'Valeur actuelle nette', color: vanVal > 0 ? TEAL : "E24B4A" },
+            { label: 'Payback', value: payback > 0 && isFinite(payback) ? `${payback.toFixed(1)} ans` : '> durée', sub: 'Délai récupération', color: ORANGE },
+            { label: 'Financement', value: `${fmtM(totalFin)} FCFA`, sub: `FP ${fmtM(totalFP)} + Dette ${fmtM(totalDette)}`, color: NAVY },
+            { label: 'Résultat net cumulé', value: resultats ? `${fmtM(resultats.reduce((s, r) => s + r.resultat_net, 0))} FCFA` : '—', sub: `Sur ${duree} ans`, color: TEAL },
+        ]
 
-    // ── BMC 9 blocs (3×3) ─────────────────────────────────────────────────────
-    const allPartenaires = [
-        ...(partenairesF || []).map(p => p.nom),
-        ...(partenairesTech || []).map(p => p.nom),
-    ].slice(0, 4).join(', ') || '—'
-
-    const bmcData = [
-        {
-            titre: 'Activités clés',
-            contenu: (produits || []).map(p => `• ${p.nom}`).join('\n') ||
-                '• Conception & assemblage\n• Marketing & vente\n• Installation & maintenance'
-        },
-        {
-            titre: 'Proposition de valeur',
-            contenu: (produits || []).map(p => p.proposition_valeur || p.nom).join('\n') ||
-                profil?.slogan || projet.produit_principal || '—'
-        },
-        {
-            titre: 'Relations clientèle',
-            contenu: 'Assistance technique personnalisée\nSuivi après-vente\nContrats de maintenance\nMonitoring à distance'
-        },
-        {
-            titre: 'Partenaires clés',
-            contenu: allPartenaires
-        },
-        {
-            titre: 'Ressources clés',
-            contenu: `${profil?.effectif || '30 ingénieurs'}\n${profil?.expertise_cle?.substring(0, 60) || '—'}\n${profil?.certifications || 'ISO 9001:2015'}`
-        },
-        {
-            titre: 'Segments clients',
-            contenu: projet.secteur || '—'
-        },
-        {
-            titre: 'Structure de coûts',
-            contenu: `CAPEX : ${formatNum(totalCapex)} FCFA\nOPEX An1 : ${formatNum(totalOpexFixe)} FCFA\nTotal projet (${duree} ans) : ${formatM(totalCapex + totalOpexFixe * duree)} FCFA`
-        },
-        {
-            titre: 'Canaux',
-            contenu: 'Prospection directe B2B\nRéseau bancaire partenaire\nSalons & événements\nMarketing digital'
-        },
-        {
-            titre: 'Sources de revenus',
-            contenu: `Vente : ${formatNum(totalUnites)} unités sur ${duree} ans\nPrix unitaire : ${formatNum(Math.round(prixUnitaire))} FCFA\nCA An1 : ${formatM(premierRes?.ca_total || 0)} FCFA`
-        },
-    ]
-
-    // Disposition : Partenaires | Activités+Ressources | Valeur | Relations | Segments
-    const bmcLayout = [
-        { i: 3, x: 0.08, y: 1.38, w: 1.68, h: 2.2 },  // Partenaires clés
-        { i: 0, x: 1.82, y: 1.38, w: 1.68, h: 1.04 }, // Activités clés
-        { i: 4, x: 1.82, y: 2.48, w: 1.68, h: 1.1  }, // Ressources clés
-        { i: 1, x: 3.56, y: 1.38, w: 1.7,  h: 2.2  }, // Proposition valeur (central)
-        { i: 2, x: 5.32, y: 1.38, w: 1.68, h: 1.04 }, // Relations
-        { i: 7, x: 5.32, y: 2.48, w: 1.68, h: 1.1  }, // Canaux
-        { i: 5, x: 7.06, y: 1.38, w: 1.68, h: 2.2  }, // Segments
-        { i: 6, x: 0.08, y: 3.64, w: 4.58, h: 1.35 }, // Structure coûts
-        { i: 8, x: 4.72, y: 3.64, w: 4.02, h: 1.35 }, // Sources revenus
-    ]
-
-    const bmcColors = [TEAL, '0E8A74', TEAL, '0A7A66', TEAL, '0E8A74', TEAL, NAVY, NAVY]
-
-    bmcLayout.forEach(({ i, x, y, w, h }, idx) => {
-        const bloc  = bmcData[i]
-        const color = bmcColors[idx]
-        slide1.addShape(pres.ShapeType.rect, { x, y, w, h, fill: { color }, line: { color: WHITE, transparency: 85 } })
-        slide1.addShape(pres.ShapeType.rect, { x, y, w, h: 0.2, fill: { color: ORANGE }, line: { color: ORANGE } })
-        slide1.addText(bloc.titre, { x: x + 0.05, y: y + 0.02, w: w - 0.1, h: 0.16, fontSize: 7, bold: true, color: WHITE, fontFace: 'Arial' })
-        slide1.addText(bloc.contenu, { x: x + 0.05, y: y + 0.23, w: w - 0.1, h: h - 0.28, fontSize: 6.5, color: WHITE, fontFace: 'Arial' })
-    })
-
-    // Mission / Vision / Valeurs à droite si espace disponible
-    slide1.addShape(pres.ShapeType.rect, { x: 8.8, y: 1.38, w: 1.16, h: 2.2, fill: { color: '064E3B' }, line: { color: WHITE, transparency: 85 } })
-    slide1.addShape(pres.ShapeType.rect, { x: 8.8, y: 1.38, w: 1.16, h: 0.2, fill: { color: ORANGE }, line: { color: ORANGE } })
-    slide1.addText('Mission', { x: 8.85, y: 1.4, w: 1.06, h: 0.16, fontSize: 7, bold: true, color: WHITE, fontFace: 'Arial' })
-    slide1.addText(profil?.mission?.substring(0, 100) || '—', { x: 8.85, y: 1.6, w: 1.06, h: 0.7, fontSize: 6, color: WHITE, fontFace: 'Arial' })
-    slide1.addText('Valeurs', { x: 8.85, y: 2.35, w: 1.06, h: 0.16, fontSize: 7, bold: true, color: ORANGE, fontFace: 'Arial' })
-    slide1.addText(profil?.valeurs?.substring(0, 80) || '—', { x: 8.85, y: 2.53, w: 1.06, h: 0.7, fontSize: 5.5, color: WHITE, fontFace: 'Arial' })
-    slide1.addText('Vision', { x: 8.85, y: 3.27, w: 1.06, h: 0.16, fontSize: 7, bold: true, color: ORANGE, fontFace: 'Arial' })
-    slide1.addText(profil?.vision?.substring(0, 60) || '—', { x: 8.85, y: 3.45, w: 1.06, h: 0.4, fontSize: 5.5, color: WHITE, fontFace: 'Arial' })
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // SLIDE 2 — SYNTHÈSE FINANCIÈRE & POINTS CLÉS
-    // ══════════════════════════════════════════════════════════════════════════
-    const slide2 = pres.addSlide()
-    addHeaderFooter(slide2, 2)
-
-    // Titre slide 2
-    slide2.addShape(pres.ShapeType.rect, { x: 0, y: 0.92, w: '100%', h: 0.32, fill: { color: NAVY }, line: { color: NAVY } })
-    slide2.addText('Synthèse financière & Points clés du projet', {
-        x: 0.2, y: 0.95, w: 9.6, h: 0.26,
-        fontSize: 11, bold: true, color: WHITE, fontFace: 'Arial', align: 'center'
-    })
-
-    // ── KPIs financiers (8 cartes) ─────────────────────────────────────────────
-    const kpis = [
-        { label: 'TRI',               value: `${tri.toFixed(1)}%`,          color: tri > 15 ? TEAL : ORANGE },
-        { label: 'VAN',               value: `${formatM(van)} FCFA`,        color: van > 0 ? TEAL : 'E24B4A' },
-        { label: 'CA An 1',           value: `${formatM(premierRes?.ca_total || 0)} FCFA`, color: NAVY },
-        { label: `CA An ${duree}`,    value: `${formatM(dernierRes?.ca_total || 0)} FCFA`, color: NAVY },
-        { label: 'Marge brute',       value: `${margeBrute.toFixed(1)}%`,   color: TEAL },
-        { label: 'Résultat net cumulé', value: `${formatM(totalResNet)} FCFA`, color: totalResNet > 0 ? TEAL : 'E24B4A' },
-        { label: 'Financement total', value: `${formatM(totalFinancement)} FCFA`, color: NAVY },
-        { label: 'Apport fonds propres', value: `${formatM(totalFP)} FCFA`, color: NAVY },
-    ]
-
-    kpis.forEach((k, i) => {
-        const col = i % 4
-        const row = Math.floor(i / 4)
-        const x   = 0.08 + col * 2.48
-        const y   = 1.32 + row * 0.75
-        slide2.addShape(pres.ShapeType.rect, { x, y, w: 2.38, h: 0.68, fill: { color: LGRAY }, line: { color: 'E5E7EB' } })
-        slide2.addShape(pres.ShapeType.rect, { x, y, w: 2.38, h: 0.12, fill: { color: k.color }, line: { color: k.color } })
-        slide2.addText(k.label, { x: x + 0.08, y: y + 0.14, w: 2.22, h: 0.18, fontSize: 8, color: '6B7280', fontFace: 'Arial' })
-        slide2.addText(k.value, { x: x + 0.08, y: y + 0.32, w: 2.22, h: 0.28, fontSize: 13, bold: true, color: k.color, fontFace: 'Arial' })
-    })
-
-    // ── Tableau compte de résultat ────────────────────────────────────────────
-    const tableY = 2.86
-    slide2.addShape(pres.ShapeType.rect, { x: 0.08, y: tableY, w: 4.8, h: 0.24, fill: { color: NAVY }, line: { color: NAVY } })
-    slide2.addText('Compte de résultat prévisionnel (FCFA)', {
-        x: 0.12, y: tableY + 0.04, w: 4.7, h: 0.18, fontSize: 8, bold: true, color: WHITE, fontFace: 'Arial'
-    })
-
-    const lignesRes = [
-        { label: "Chiffre d'Affaires",  key: 'ca_total',     bold: true  },
-        { label: 'Marge brute',         key: 'marge_brute',  bold: false },
-        { label: 'EBITDA',              key: 'ebitda',       bold: false },
-        { label: 'Résultat net',        key: 'resultat_net', bold: true  },
-        { label: 'Trésorerie',          key: 'tresorerie',   bold: false },
-    ]
-    const colsAnnees = (resultats || []).slice(0, 5)
-    const colW = 4.1 / (colsAnnees.length + 1)
-
-    // En-tête colonnes
-    slide2.addShape(pres.ShapeType.rect, { x: 0.08, y: tableY + 0.24, w: 0.72, h: 0.22, fill: { color: TEAL }, line: { color: TEAL } })
-    colsAnnees.forEach((r, ci) => {
-        slide2.addShape(pres.ShapeType.rect, { x: 0.08 + 0.72 + ci * colW, y: tableY + 0.24, w: colW, h: 0.22, fill: { color: TEAL }, line: { color: TEAL } })
-        slide2.addText(String(r.annee), { x: 0.08 + 0.72 + ci * colW, y: tableY + 0.26, w: colW, h: 0.18, fontSize: 7, bold: true, color: WHITE, fontFace: 'Arial', align: 'center' })
-    })
-
-    lignesRes.forEach((l, li) => {
-        const ry   = tableY + 0.46 + li * 0.3
-        const bg   = l.bold ? 'E6F1FB' : (li % 2 === 0 ? WHITE : LGRAY)
-        slide2.addShape(pres.ShapeType.rect, { x: 0.08, y: ry, w: 4.8, h: 0.28, fill: { color: bg }, line: { color: 'E5E7EB' } })
-        slide2.addText(l.label, { x: 0.12, y: ry + 0.05, w: 0.65, h: 0.2, fontSize: 6.5, bold: l.bold, color: '374151', fontFace: 'Arial' })
-        colsAnnees.forEach((r, ci) => {
-            const val = r[l.key as keyof typeof r] as number
-            const txt = `${formatM(val)}`
-            slide2.addText(txt, {
-                x: 0.08 + 0.72 + ci * colW, y: ry + 0.04, w: colW, h: 0.2,
-                fontSize: 6.5, bold: l.bold, color: val < 0 ? 'E24B4A' : l.bold ? TEAL : '374151',
-                fontFace: 'Arial', align: 'center'
-            })
+        const cols = 4
+        const cardW = (SW - 0.5) / cols - 0.1
+        kpiRow.forEach((k, i) => {
+            const col = i % cols
+            const row = Math.floor(i / cols)
+            addKpiCard(pres, s, 0.25 + col * (cardW + 0.1), Y + row * 1.2, cardW, 1.1, k.label, k.value, k.sub, k.color)
         })
-    })
 
-    // ── Plan de financement ───────────────────────────────────────────────────
-    const finY = tableY
-    slide2.addShape(pres.ShapeType.rect, { x: 5.08, y: finY, w: 4.88, h: 0.24, fill: { color: NAVY }, line: { color: NAVY } })
-    slide2.addText('Plan de financement', {
-        x: 5.12, y: finY + 0.04, w: 4.78, h: 0.18, fontSize: 8, bold: true, color: WHITE, fontFace: 'Arial'
-    })
-
-    ;[
-        { label: 'Coûts démarrage An 1', value: `${formatNum(totalCapex + totalOpexFixe)} FCFA`, color: NAVY },
-        { label: `CAPEX`, value: `${formatNum(totalCapex)} FCFA`, color: '374151' },
-        { label: `OPEX An 1`, value: `${formatNum(totalOpexFixe)} FCFA`, color: '374151' },
-        { label: 'Financement sollicité', value: `${formatNum(totalFinancement)} FCFA`, color: ORANGE },
-        { label: 'Apport fonds propres', value: `${formatNum(totalFP)} FCFA`, color: TEAL },
-        { label: `Croissance ventes`, value: `${(hyp('volume_initial', 100) || 0).toFixed(0)} → ${Math.round((hyp('volume_initial', 100) || 100) * Math.pow(1 + hyp('taux_croissance', 0.25), duree - 1))} unités (+${croissance.toFixed(0)}%/an)`, color: NAVY },
-        { label: 'Total unités sur projet', value: `${formatNum(totalUnites)} unités / ${duree} ans`, color: NAVY },
-        { label: 'Résultat net cumulé', value: `${formatNum(Math.round(totalResNet))} FCFA`, color: totalResNet > 0 ? TEAL : 'E24B4A' },
-        { label: `Coûts totaux (${duree} ans)`, value: `${formatM((totalCapex + totalOpexFixe) * duree)} FCFA`, color: NAVY },
-    ].forEach((r, i) => {
-        const ry = finY + 0.28 + i * 0.28
-        const bg = i === 0 || i === 3 || i === 4 ? LGRAY : (i % 2 === 0 ? WHITE : 'FAFAFA')
-        slide2.addShape(pres.ShapeType.rect, { x: 5.08, y: ry, w: 4.88, h: 0.26, fill: { color: bg }, line: { color: 'E5E7EB' } })
-        slide2.addText(r.label, { x: 5.12, y: ry + 0.04, w: 2.8, h: 0.18, fontSize: 7, color: '374151', fontFace: 'Arial', bold: i === 0 || i === 3 })
-        slide2.addText(r.value, { x: 7.95, y: ry + 0.04, w: 1.96, h: 0.18, fontSize: 7, bold: i === 0 || i === 3 || i === 4, color: r.color, fontFace: 'Arial', align: 'right' })
-    })
-
-    // ── Risques & Impacts ─────────────────────────────────────────────────────
-    const bottomY = 4.55
-    // Risques
-    slide2.addShape(pres.ShapeType.rect, { x: 0.08, y: bottomY, w: 4.8, h: 0.22, fill: { color: ORANGE }, line: { color: ORANGE } })
-    slide2.addText('⚠ Risques identifiés', { x: 0.12, y: bottomY + 0.03, w: 4.7, h: 0.16, fontSize: 8, bold: true, color: WHITE, fontFace: 'Arial' })
-
-    const risquesTop = (risques || []).slice(0, 4)
-    if (risquesTop.length === 0) {
-        slide2.addText('Aucun risque identifié', { x: 0.12, y: bottomY + 0.26, w: 4.7, h: 0.2, fontSize: 7, color: '6B7280', fontFace: 'Arial' })
-    } else {
-        risquesTop.forEach((r, i) => {
-            const nColor = r.niveau_risque === 'critique' ? 'FEE2E2' : r.niveau_risque === 'eleve' ? 'FFF3DC' : 'F9FAFB'
-            const tColor = r.niveau_risque === 'critique' ? '991B1B' : r.niveau_risque === 'eleve' ? '854F0B' : '374151'
-            slide2.addShape(pres.ShapeType.rect, { x: 0.08, y: bottomY + 0.24 + i * 0.15, w: 4.8, h: 0.14, fill: { color: nColor }, line: { color: 'E5E7EB' } })
-            slide2.addText(`${r.niveau_risque === 'critique' ? '🔴' : r.niveau_risque === 'eleve' ? '🟠' : '🟡'} ${r.description.substring(0, 45)} — ${r.mesure_mitigation?.substring(0, 30) || 'À définir'}`, {
-                x: 0.12, y: bottomY + 0.25 + i * 0.15, w: 4.7, h: 0.12,
-                fontSize: 6.5, color: tColor, fontFace: 'Arial'
+        // Mini graphe en barres (tableau textuel) si résultats
+        if (resultats && resultats.length > 0) {
+            const chartY = Y + 2.5
+            s.addText('Évolution du Chiffre d\'Affaires (M FCFA)', {
+                x: 0.25, y: chartY, w: 9.5, h: 0.28,
+                fontSize: 10, bold: true, color: NAVY, fontFace: "Calibri",
             })
-        })
-    }
-
-    // Impacts
-    slide2.addShape(pres.ShapeType.rect, { x: 5.08, y: bottomY, w: 4.88, h: 0.22, fill: { color: TEAL }, line: { color: TEAL } })
-    slide2.addText('🌿 Impacts & ODD', { x: 5.12, y: bottomY + 0.03, w: 4.78, h: 0.16, fontSize: 8, bold: true, color: WHITE, fontFace: 'Arial' })
-
-    const impactsTop = (impacts || []).slice(0, 4)
-    if (impactsTop.length === 0) {
-        slide2.addText('Aucun impact renseigné', { x: 5.12, y: bottomY + 0.26, w: 4.78, h: 0.2, fontSize: 7, color: '6B7280', fontFace: 'Arial' })
-    } else {
-        impactsTop.forEach((imp, i) => {
-            slide2.addShape(pres.ShapeType.rect, { x: 5.08, y: bottomY + 0.24 + i * 0.15, w: 4.88, h: 0.14, fill: { color: i % 2 === 0 ? 'E1F5EE' : 'F9FAFB' }, line: { color: 'E5E7EB' } })
-            slide2.addText(`✅ ${imp.indicateur}${imp.valeur ? ` : ${imp.valeur} ${imp.unite || ''}` : ''} ${imp.odd ? `[${imp.odd}]` : ''}`, {
-                x: 5.12, y: bottomY + 0.25 + i * 0.15, w: 4.78, h: 0.12,
-                fontSize: 6.5, color: '0F6E56', fontFace: 'Arial'
-            })
-        })
-    }
-
-    // ── Concurrents ───────────────────────────────────────────────────────────
-    if (concurrents && concurrents.length > 0) {
-        const concY = bottomY + 0.88
-        if (concY < 5.1) {
-            slide2.addText('Concurrents : ' + concurrents.slice(0, 3).map(c => `${c.nom} (${c.type || '—'})`).join('  |  '), {
-                x: 0.08, y: concY, w: 9.88, h: 0.18,
-                fontSize: 6.5, color: '6B7280', fontFace: 'Arial', italic: true
+            s.addChart(pres.charts.BAR, [{
+                name: "CA",
+                labels: resultats.map(r => String(r.annee)),
+                values: resultats.map(r => Math.round(r.ca_total / 1_000_000 * 10) / 10),
+            }, {
+                name: "Résultat net",
+                labels: resultats.map(r => String(r.annee)),
+                values: resultats.map(r => Math.round(r.resultat_net / 1_000_000 * 10) / 10),
+            }], {
+                x: 0.25, y: chartY + 0.3, w: 9.5, h: 1.75,
+                barDir: 'col',
+                chartColors: [TEAL, ORANGE],
+                chartArea: { fill: { color: WHITE }, roundedCorners: false },
+                catAxisLabelColor: DGRAY,
+                valAxisLabelColor: DGRAY,
+                valGridLine: { color: "E2E8F0", size: 0.5 },
+                catGridLine: { style: "none" },
+                showValue: true,
+                dataLabelColor: "1E293B",
+                showLegend: true,
+                legendPos: 'b',
+                legendFontSize: 8,
             })
         }
     }
 
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 5 - AVANTAGES DU PRODUIT
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Avantages du produit', 5)
+        const Y = CONTENT_Y + 0.05
+
+        // Titre produit
+        const prodName = (produits || [])[0]?.nom || projet.produit_principal || 'Notre produit'
+        s.addShape(pres.shapes.RECTANGLE, {
+            x: 0.25, y: Y, w: 9.5, h: 0.44,
+            fill: { color: ORANGE_L }, line: { color: ORANGE },
+        })
+        s.addText(prodName, {
+            x: 0.4, y: Y + 0.06, w: 9.2, h: 0.32,
+            fontSize: 14, bold: true, color: NAVY, fontFace: "Calibri",
+        })
+
+        // 3 colonnes : Différenciation / Innovation / Valeur ajoutée
+        const cols3 = [
+            {
+                title: 'Différenciation',
+                items: concurrents && concurrents.length > 0
+                    ? concurrents.slice(0, 3).map(c => c.notre_differenciation?.substring(0, 60) || `vs ${c.nom}`)
+                    : ['Prix accessibles vs concurrents', 'Adapté au marché africain', 'Support mobile money', 'Interface simplifiée'],
+                color: ORANGE,
+            },
+            {
+                title: 'Innovation',
+                items: (produits || []).length > 0
+                    ? (produits || []).flatMap(p => [p.proposition_valeur?.substring(0, 60) || p.nom]).slice(0, 4)
+                    : ['Algorithme KEG breveté', 'Réduction 30-50% des coûts', 'Dimensionnement optimisé', 'Critères LCOA / LPSP / LOLP'],
+                color: TEAL,
+            },
+            {
+                title: 'Valeur ajoutée',
+                items: [
+                    'Économie directe pour les clients',
+                    'Formations et certification',
+                    'Support technique dédié',
+                    'Mises à jour régulières',
+                ],
+                color: NAVY,
+            },
+        ]
+        const cW = (SW - 0.7) / 3 - 0.1
+        cols3.forEach((col, i) => {
+            addCard(pres, s, 0.25 + i * (cW + 0.1), Y + 0.55, cW, CONTENT_H - 0.6, col.title, col.items, col.color, WHITE)
+        })
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 6 - GO-TO-MARKET STRATEGY
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Go-To-Market Strategy', 6)
+        const Y = CONTENT_Y + 0.05
+
+        // 3 colonnes : Acquisition / Partenariats / Déploiement
+        const gtm = [
+            {
+                title: 'Acquisition', color: ORANGE,
+                items: [
+                    'Marketing digital (SEO, réseaux sociaux)',
+                    'Campagnes emailing ciblées',
+                    'Webinaires de démonstration',
+                    'Modèle Freemium vers Conversion',
+                    'Tutoriels vidéo et études de cas',
+                ],
+            },
+            {
+                title: 'Partenariats', color: TEAL,
+                items: [
+                    'Universités et centres de formation',
+                    'Autorités de régulation (AT2ER)',
+                    'Réseau de formateurs certifiés',
+                    'CEDEAO et ECREEE',
+                    'Partenaires bancaires (mobile money)',
+                ],
+            },
+            {
+                title: 'Déploiement', color: NAVY,
+                items: [
+                    `Phase 1 (${anneeDebut}) : Lancement Togo`,
+                    `Phase 2 : CEDEAO francophone`,
+                    `Phase 3 : Afrique anglophone`,
+                    `Phase 4 : Leader continental`,
+                    `Cible ${anneeDebut + duree - 1} : ${fmt(hyp('volume_initial', 100) * Math.pow(1.25, duree - 1))} clients`,
+                ],
+            },
+        ]
+
+        const cW = (SW - 0.7) / 3 - 0.1
+        gtm.forEach((col, i) => {
+            addCard(pres, s, 0.25 + i * (cW + 0.1), Y, cW, CONTENT_H, col.title, col.items, col.color, WHITE)
+        })
+
+        if (resultats && resultats.length > 0) {
+            const timeY = CONTENT_Y + CONTENT_H - 0.05
+            s.addShape(pres.shapes.RECTANGLE, {
+                x: 0.25, y: timeY + 0.05, w: 9.5, h: 0.28,
+                fill: { color: LGRAY }, line: { color: LGRAY },
+            })
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 7 - ANALYSE DES RISQUES
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Analyse des risques', 7)
+        const Y = CONTENT_Y + 0.05
+
+        const risquesAll = risques && risques.length > 0 ? risques : [
+            { description: 'Retard acquisition clients', probabilite: 'moyenne', niveau_risque: 'modere', mesure_mitigation: 'Réserve de 12 mois d\'OPEX', categorie: 'Financier' },
+            { description: 'Défaillance technique logiciel', probabilite: 'faible', niveau_risque: 'eleve', mesure_mitigation: 'Sauvegarde + support dédié', categorie: 'Technique' },
+            { description: 'Concurrence agressive', probabilite: 'moyenne', niveau_risque: 'modere', mesure_mitigation: 'Différenciation prix + fonctionnalités', categorie: 'Marché' },
+        ]
+
+        // Groupes de risques
+        const riskGroups = [
+            { key: 'Opérationnel', title: 'Risques opérationnels', color: NAVY, items: risquesAll.filter(r => ['Opérationnel', 'Technique'].includes(r.categorie || '')) },
+            { key: 'Marché', title: 'Risques marchés', color: ORANGE, items: risquesAll.filter(r => ['Marché', 'Concurrentiel'].includes(r.categorie || '')) },
+            { key: 'Financier', title: 'Risques financiers', color: TEAL, items: risquesAll.filter(r => ['Financier', 'Liquidité'].includes(r.categorie || '')) },
+        ]
+
+        const cW = (SW - 0.7) / 3 - 0.1
+        riskGroups.forEach((grp, i) => {
+            const items = grp.items.length > 0
+                ? grp.items.map(r => `${r.description} vers ${r.mesure_mitigation || '—'}`.substring(0, 75))
+                : ['Aucun risque identifié dans cette catégorie']
+            addCard(pres, s, 0.25 + i * (cW + 0.1), Y, cW, CONTENT_H, grp.title, items, grp.color, WHITE)
+        })
+
+        // Matrice visuelle simplifiée (indicateurs)
+        const critiques  = risquesAll.filter(r => r.niveau_risque === 'critique').length
+        const eleves     = risquesAll.filter(r => r.niveau_risque === 'eleve').length
+        const moderes    = risquesAll.filter(r => r.niveau_risque === 'modere').length
+        const faibles    = risquesAll.filter(r => r.niveau_risque === 'faible').length
+
+        const statY = CONTENT_Y + CONTENT_H - 0.82
+        ;[
+            { label: 'Critiques', val: critiques, color: "991B1B" },
+            { label: 'Élevés', val: eleves, color: "E24B4A" },
+            { label: 'Modérés', val: moderes, color: "854F0B" },
+            { label: 'Faibles', val: faibles, color: TEAL },
+        ].forEach((st, i) => {
+            s.addShape(pres.shapes.RECTANGLE, {
+                x: 0.25 + i * 2.43, y: statY, w: 2.28, h: 0.62,
+                fill: { color: WHITE }, line: { color: st.color, width: 1.5 },
+            })
+            s.addText(`${st.val}`, {
+                x: 0.3 + i * 2.43, y: statY + 0.04, w: 0.7, h: 0.54,
+                fontSize: 22, bold: true, color: st.color, fontFace: "Calibri",
+            })
+            s.addText(st.label, {
+                x: 1.0 + i * 2.43, y: statY + 0.16, w: 1.4, h: 0.3,
+                fontSize: 9, color: st.color, fontFace: "Calibri",
+            })
+        })
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 8 - ANALYSE SWOT
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Analyse SWOT', 8)
+        const Y = CONTENT_Y + 0.05
+
+        const swot = [
+            {
+                title: 'Forces', color: TEAL, fill: TEAL_L, x: 0.25, y: Y,
+                items: [
+                    'Innovation technologique (méthode KEG)',
+                    `${profil?.certifications || 'ISO 9001:2015'} - seule entreprise certifiée`,
+                    `${profil?.effectif || '30+'} ingénieurs expérimentés`,
+                    'Base de 300+ utilisateurs bêta',
+                    'Prix accessible via mobile money',
+                ],
+            },
+            {
+                title: 'Faiblesses', color: ORANGE, fill: ORANGE_L, x: 5.1, y: Y,
+                items: [
+                    'Notoriété internationale limitée',
+                    'Dépendance au marché africain',
+                    'Ressources R&D limitées',
+                    'Phase de trésorerie négative (An 1-2)',
+                ],
+            },
+            {
+                title: 'Opportunités', color: NAVY, fill: NAVY_L, x: 0.25, y: Y + 2.3,
+                items: [
+                    'Croissance solaire Afrique +20%/an',
+                    '620 M personnes sans électricité',
+                    'ODD 7 : financement international',
+                    'Digitalisation des formations',
+                    `Expansion ${anneeDebut + 2}+ : marchés anglophones`,
+                ],
+            },
+            {
+                title: 'Menaces', color: "991B1B", fill: "FEE2E2", x: 5.1, y: Y + 2.3,
+                items: [
+                    'Entrée de logiciels internationaux lowcost',
+                    'Instabilité réglementaire locale',
+                    'Volatilité des taux de change',
+                    'Adoption lente des outils digitaux',
+                ],
+            },
+        ]
+
+        const cW = 4.6
+        const cH = 2.1
+        swot.forEach(q => {
+            addCard(pres, s, q.x, q.y, cW, cH, q.title, q.items, q.color, q.fill)
+        })
+
+        // Centre SWOT label
+        s.addShape(pres.shapes.RECTANGLE, {
+            x: 4.72, y: Y + 0.9, w: 0.38, h: 2.45,
+            fill: { color: WHITE }, line: { color: WHITE },
+        })
+        s.addText('S\nW\nO\nT', {
+            x: 4.72, y: Y + 0.95, w: 0.38, h: 2.35,
+            fontSize: 11, bold: true, color: NAVY, fontFace: "Calibri",
+            align: "center", valign: "middle",
+        })
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 9 - ANALYSE PESTEL
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = addSlide('Analyse PESTEL', 9)
+        const Y = CONTENT_Y + 0.05
+
+        const pestel = [
+            { code: 'P', title: 'Politique', color: NAVY, items: ['Stabilité politique CEDEAO', 'Soutien AT2ER, ECREEE', 'ODD 7 - agenda international'] },
+            { code: 'E', title: 'Économique', color: TEAL, items: ['Croissance solaire +20%/an', 'Contraintes financières des ménages', 'Mobile money = levier d\'accès'] },
+            { code: 'S', title: 'Social', color: "6B21A8", items: ['620 M sans électricité (2030)', 'Jeunesse africaine et digital', 'Demande d\'emplois qualifiés'] },
+            { code: 'T', title: 'Technologique', color: ORANGE, items: ['IA et logiciels low-code', 'Cloud computing accessible', 'Innovation logicielle Afrique'] },
+            { code: 'E2', title: 'Environnemental', color: "065F46", items: ['ODD 13 - lutte climatique', 'Réduction émissions CO2', 'Optimisation batteries'] },
+            { code: 'L', title: 'Légal', color: "991B1B", items: ['Loi 2018-010 Togo', 'Décret AT2ER 2016', 'Protocole énergie CEDEAO 2003'] },
+        ]
+
+        const cols = 3
+        const cW = (SW - 0.6) / cols - 0.1
+        const cH = (CONTENT_H - 0.05) / 2 - 0.1
+        pestel.forEach((item, i) => {
+            const col = i % cols
+            const row = Math.floor(i / cols)
+            const x = 0.25 + col * (cW + 0.1)
+            const y = Y + row * (cH + 0.12)
+            addCard(pres, s, x, y, cW, cH, `${item.code} - ${item.title}`, item.items, item.color, WHITE)
+        })
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // SLIDE 10 - CALL TO ACTION
+    // ════════════════════════════════════════════════════════════
+    {
+        const s = pres.addSlide()
+        s.background = { color: NAVY }
+        addFooter(pres, s, ent)
+
+        // Header dark
+        s.addShape(pres.shapes.RECTANGLE, {
+            x: 0, y: 0, w: SW, h: 0.05,
+            fill: { color: ORANGE }, line: { color: ORANGE },
+        })
+
+        if (logo) {
+            s.addImage({
+                data: `data:image/${logo.ext};base64,${logo.base64}`,
+                x: 0.25, y: 0.15, w: 0.7, h: 0.7,
+            })
+        }
+        s.addText(ent, {
+            x: 1.1, y: 0.2, w: 5, h: 0.5,
+            fontSize: 16, bold: true, color: WHITE, fontFace: "Calibri",
+        })
+        s.addText('10 / 10', {
+            x: 8.5, y: 0.25, w: 1.2, h: 0.35,
+            fontSize: 9, color: ORANGE, fontFace: "Calibri", align: "right", bold: true,
+        })
+
+        // Grand titre CTA
+        s.addText('Rejoignez la révolution\nsolaire africaine', {
+            x: 0.5, y: 0.95, w: 9, h: 1.2,
+            fontSize: 30, bold: true, color: WHITE, fontFace: "Calibri",
+            align: "center", valign: "middle",
+        })
+
+        // Trait décoratif orange
+        s.addShape(pres.shapes.RECTANGLE, {
+            x: 3.5, y: 2.2, w: 3, h: 0.06,
+            fill: { color: ORANGE }, line: { color: ORANGE },
+        })
+
+        // 3 blocs : Besoin / Prochaines étapes / Demande
+        const ctaY = 2.35
+        const ctas = [
+            {
+                title: 'Notre besoin',
+                body: `Financement de ${fmt(totalDette)} FCFA\n(70% dette, 30% fonds propres)\nPour ${duree} ans de déploiement`,
+                color: ORANGE,
+            },
+            {
+                title: 'Prochaines étapes',
+                body: `1. Validation dossier financier\n2. Due diligence et audit\n3. Accord de financement\n4. Lancement ${anneeDebut}`,
+                color: TEAL,
+            },
+            {
+                title: 'Ce que nous proposons',
+                body: `TRI ${triVal > 0 ? (triVal * 100).toFixed(0) : '35'}% - VAN ${vanVal > 0 ? fmtM(vanVal) : '+'} FCFA\nPayback ${payback > 0 && isFinite(payback) ? payback.toFixed(1) : 2.5} ans\nPartage des bénéfices`,
+                color: WHITE,
+            },
+        ]
+
+        const cW = (SW - 0.7) / 3 - 0.1
+        ctas.forEach((cta, i) => {
+            const x = 0.25 + i * (cW + 0.1)
+            s.addShape(pres.shapes.RECTANGLE, {
+                x, y: ctaY, w: cW, h: 2.2,
+                fill: { color: "1A3A5C" },
+                line: { color: cta.color, width: 1.5 },
+            })
+            s.addShape(pres.shapes.RECTANGLE, {
+                x, y: ctaY, w: cW, h: 0.07,
+                fill: { color: cta.color }, line: { color: cta.color },
+            })
+            s.addText(cta.title, {
+                x: x + 0.1, y: ctaY + 0.1, w: cW - 0.2, h: 0.35,
+                fontSize: 10, bold: true, color: cta.color, fontFace: "Calibri",
+            })
+            s.addText(cta.body, {
+                x: x + 0.1, y: ctaY + 0.48, w: cW - 0.2, h: 1.62,
+                fontSize: 10, color: WHITE, fontFace: "Calibri",
+                wrap: true, valign: "top",
+            })
+        })
+
+        // Contact
+        s.addText(`${profil?.localisation || 'Lomé, Togo'} - ${ent}`, {
+            x: 0.5, y: SH - 0.6, w: SW - 1, h: 0.25,
+            fontSize: 9, color: "A8C4E0", fontFace: "Calibri", align: "center",
+        })
+    }
+
+    // ── Génération du buffer ──────────────────────────────────
     const buffer = await pres.write({ outputType: 'nodebuffer' }) as Buffer
-    const nom    = (projet.nom || 'BusinessModel').replace(/\s+/g, '_')
-    const date   = new Date().toISOString().split('T')[0]
+    const nom  = (projet.nom || 'BusinessModel').replace(/\s+/g, '_')
+    const date = new Date().toISOString().split('T')[0]
 
     return new NextResponse(new Uint8Array(buffer), {
         headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'Content-Disposition': `attachment; filename="${nom}_Synthese_${date}.pptx"`,
+            'Content-Disposition': `attachment; filename="${nom}_Presentation_${date}.pptx"`,
         }
     })
 }
