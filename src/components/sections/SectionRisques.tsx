@@ -53,7 +53,7 @@ export default function SectionRisques({ projetId, onSave }: Props) {
                 description: 'Nouveau risque identifié',
                 probabilite: 'faible',
                 impact: 'faible',
-                mesure_attenuation: ''
+                mesure_mitigation: ''
             }])
             .select().single()
         if (data) setRisques(prev => [...prev, data])
@@ -148,8 +148,8 @@ export default function SectionRisques({ projetId, onSave }: Props) {
                                 <label style={{ fontSize: '11px', fontWeight: 600, color: '#169B86', display: 'block', marginBottom: '4px' }}>
                                     Mesure d'atténuation / Plan de contingence
                                 </label>
-                                <textarea value={risque.mesure_attenuation || ''}
-                                          onChange={e => update(risque.id, 'mesure_attenuation', e.target.value)}
+                                <textarea value={risque.mesure_mitigation || ''}
+                                          onChange={e => update(risque.id, 'mesure_mitigation', e.target.value)}
                                           placeholder="Actions entreprises pour réduire la probabilité ou l'impact de ce risque..."
                                           rows={2}
                                           style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, borderColor: '#169B86' }} />
