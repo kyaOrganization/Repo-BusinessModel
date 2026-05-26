@@ -8,7 +8,7 @@ import { createClient } from '@/lib/superbase/server'
 import {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
-    Header, Footer, VerticalAlign
+    Header, Footer, VerticalAlign, PageNumber
 } from 'docx'
 
 // ── Palette KYA ───────────────────────────────────────────────
@@ -48,13 +48,12 @@ function cell(text: string, opts: { fill?: string, bold?: boolean, color?: strin
     })
 }
 
-// Adaptation : Ajout du paramètre optional 'pageBreak' pour forcer le saut de page de manière universelle
 function h1(text: string, pageBreak = false) {
     return new Paragraph({
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 360, after: 120 },
         keepNext: true,
-        pageBreakBefore: pageBreak, // Utilisation de la propriété native plutôt que du composant instable PageBreak
+        pageBreakBefore: pageBreak, 
         children: [new TextRun({ text, bold: true, color: NAVY, size: 28, font: "Calibri" })]
     })
 }
@@ -138,12 +137,12 @@ export async function GET(req: NextRequest) {
                         new Paragraph({
                             alignment: AlignmentType.RIGHT,
                             spacing: { before: 100 },
-                            // Remplacement des SimpleField instables par des codes de champs Word universels en TextRun
+                            // Approche standard : PageNumber.CURRENT et PageNumber.TOTAL_PAGES placés directement dans children
                             children: [
                                 new TextRun({ text: "Page ", font: "Calibri", size: 18, color: DGRAY }),
-                                new TextRun({ fieldCodes: ["PAGE"], font: "Calibri", size: 18, color: DGRAY, bold: true }),
+                                PageNumber.CURRENT,
                                 new TextRun({ text: " sur ", font: "Calibri", size: 18, color: DGRAY }),
-                                new TextRun({ fieldCodes: ["NUMPAGES"], font: "Calibri", size: 18, color: DGRAY, bold: true })
+                                PageNumber.TOTAL_PAGES
                             ]
                         })
                     ]
@@ -217,7 +216,7 @@ export async function GET(req: NextRequest) {
                 }),
 
                 // ════════════════════════════════════════════════
-                // SECTION 1 : RÉSUMÉ EXÉCUTIF & VISION (Saut de page ici)
+                // SECTION 1 : RÉSUMÉ EXÉCUTIF & VISION
                 // ════════════════════════════════════════════════
                 h1("1. Résumé Exécutif & Vision Globale", true),
                 txt(projet.description || "Aucune description globale n'a été configurée pour ce business model."),
@@ -342,7 +341,7 @@ export async function GET(req: NextRequest) {
                 }),
 
                 // ════════════════════════════════════════════════
-                // SECTION 4 : TRAJECTOIRE FINANCIÈRE PROJETÉE (Saut de page ici)
+                // SECTION 4 : TRAJECTOIRE FINANCIÈRE PROJETÉE
                 // ════════════════════════════════════════════════
                 h1("4. Modélisations & Résultats Financiers", true),
                 txt("Les tableaux ci-dessous présentent les projections annuelles de l'exploitation."),
