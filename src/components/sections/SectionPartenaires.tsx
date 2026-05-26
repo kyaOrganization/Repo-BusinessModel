@@ -11,8 +11,10 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/superbase/client'
 import type {
     PartenaireFinancier, PartenaireTechnique,
-    TypeOngletPartenaire, PartenaireCustom, MethodeRemb,
+    PartenaireCustom, MethodeRemb,
 } from '@/lib/superbase/types'
+
+type TypeOngletPartenaire = 'financiers' | 'techniques' | 'institutionnels' | 'commerciaux'
 
 interface Props { projetId: string; onSave: () => void }
 
