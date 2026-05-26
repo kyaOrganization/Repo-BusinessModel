@@ -16,10 +16,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/superbase/server'
+import { createClient } from '@/lib/superbase/server' // Retenu selon ta structure exacte
 import pptxgen from 'pptxgenjs'
-import * as fs from 'fs'
-import * as path from 'path'
 
 // ── Palette ───────────────────────────────────────────────────
 const NAVY   = "0D2B55"
@@ -38,6 +36,7 @@ const SH = 7.5
 // ── Typages PPTXGenJS Corrigés ─────────────────────────────────
 type Pres = pptxgen
 type Slide = pptxgen.Slide
+type HAlign = "center" | "left" | "right" | "justify";
 
 // ── Helpers de mise en page ───────────────────────────────────
 function fmt(v: number | null | undefined): string {
@@ -140,7 +139,7 @@ export async function GET(req: NextRequest) {
         // Métadonnées d'ancrage en bas
         s.addText(`Porteur du projet : ${ent}\nSecteur : ${profil?.secteur_activite || 'Énergies Renouvelables'}\nDate d'édition : ${new Date().toLocaleDateString('fr-FR')}`, {
             x: 1.0, y: SH - 1.5, w: 6.0, h: 0.8,
-            fontSize: 11, color: "A8C4E0", fontFace: "Calibri", lineHeight: 1.4
+            fontSize: 11, color: "A8C4E0", fontFace: "Calibri"
         })
     }
 
@@ -223,28 +222,28 @@ export async function GET(req: NextRequest) {
             // Ligne d'en-tête du tableau
             const headerRow = [{ text: "Indicateur (FCFA)", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11 } }]
             items.forEach(it => {
-                headerRow.push({ text: `Année ${it.annee}`, options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "right" as const } })
+                headerRow.push({ text: `Année ${it.annee}`, options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "right" as HAlign } })
             })
             tableRows.push(headerRow)
 
             // Ligne Chiffre d'Affaires
             const caRow: any[] = [{ text: "Chiffre d'Affaires", options: { bold: true, fontSize: 10, fill: LGRAY } }]
-            items.forEach(it => caRow.push({ text: fmt(it.chiffre_affaires), options: { fontSize: 10, align: "right" as const, fill: LGRAY } }))
+            items.forEach(it => caRow.push({ text: fmt(it.chiffre_affaires), options: { fontSize: 10, align: "right" as HAlign, fill: LGRAY } }))
             tableRows.push(caRow)
 
             // Ligne EBITDA
             const ebitdaRow: any[] = [{ text: "EBITDA", options: { bold: true, fontSize: 10 } }]
-            items.forEach(it => ebitdaRow.push({ text: fmt(it.ebitda), options: { fontSize: 10, align: "right" as const } }))
+            items.forEach(it => ebitdaRow.push({ text: fmt(it.ebitda), options: { fontSize: 10, align: "right" as HAlign } }))
             tableRows.push(ebitdaRow)
 
             // Ligne Résultat Net
             const rnRow: any[] = [{ text: "Résultat Net", options: { bold: true, fontSize: 10, fill: LGRAY } }]
-            items.forEach(it => rnRow.push({ text: fmt(it.resultat_net), options: { fontSize: 10, align: "right" as const, fill: LGRAY } }))
+            items.forEach(it => rnRow.push({ text: fmt(it.resultat_net), options: { fontSize: 10, align: "right" as HAlign, fill: LGRAY } }))
             tableRows.push(rnRow)
 
             // Ligne Trésorerie Fin d'année
             const cashRow: any[] = [{ text: "Trésorerie Clôture", options: { bold: true, fontSize: 10 } }]
-            items.forEach(it => cashRow.push({ text: fmt(it.tresorerie_cumulee), options: { fontSize: 10, align: "right" as const } }))
+            items.forEach(it => cashRow.push({ text: fmt(it.tresorerie_cumulee), options: { fontSize: 10, align: "right" as HAlign } }))
             tableRows.push(cashRow)
 
             s.addTable(tableRows, {
@@ -321,10 +320,10 @@ export async function GET(req: NextRequest) {
             
             // En-tête de phase
             s.addShape('rect', { x: x + 0.2, y: 2.1, w: 3.4, h: 0.4, fill: { color: NAVY }, line: { color: NAVY } })
-            s.addText(g.step, { x: x + 0.2, y: 2.1, w: 3.4, h: 0.4, fontSize: 10, bold: true, color: WHITE, align: "center" as const, valign: "middle" })
+            s.addText(g.step, { x: x + 0.2, y: 2.1, w: 3.4, h: 0.4, fontSize: 10, bold: true, color: WHITE, align: "center" as HAlign, valign: "middle" })
 
-            s.addText(g.title, { x: x + 0.2, y: 2.8, w: 3.4, h: 0.5, fontSize: 13, bold: true, color: ORANGE, fontFace: "Calibri", align: "center" as const })
-            s.addText(g.body, { x: x + 0.2, y: 3.5, w: 3.4, h: 2.8, fontSize: 11, color: "374151", fontFace: "Calibri", wrap: true, valign: "top", align: "justify" as const })
+            s.addText(g.title, { x: x + 0.2, y: 2.8, w: 3.4, h: 0.5, fontSize: 13, bold: true, color: ORANGE, fontFace: "Calibri", align: "center" as HAlign })
+            s.addText(g.body, { x: x + 0.2, y: 3.5, w: 3.4, h: 2.8, fontSize: 11, color: "374151", fontFace: "Calibri", wrap: true, valign: "top", align: "justify" as HAlign })
         })
     }
 
@@ -339,13 +338,13 @@ export async function GET(req: NextRequest) {
         const list = (risques || []).slice(0, 4)
 
         if (list.length === 0) {
-            s.addText("Aucun risque spécifique modélisé.", { x: 1.0, y: 3.0, w: SW - 2, h: 1.0, fontSize: 14, color: DGRAY, fontFace: "Calibri", align: "center" as const })
+            s.addText("Aucun risque spécifique modélisé.", { x: 1.0, y: 3.0, w: SW - 2, h: 1.0, fontSize: 14, color: DGRAY, fontFace: "Calibri", align: "center" as HAlign })
         } else {
             const tRows: any[][] = [
                 [
                     { text: "Description du Risque", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11 } },
-                    { text: "Probabilité", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "center" as const } },
-                    { text: "Impact", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "center" as const } },
+                    { text: "Probabilité", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "center" as HAlign } },
+                    { text: "Impact", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11, align: "center" as HAlign } },
                     { text: "Stratégie d'Atténuation / Contingence", options: { fill: NAVY, color: WHITE, bold: true, fontSize: 11 } }
                 ]
             ]
@@ -354,8 +353,8 @@ export async function GET(req: NextRequest) {
                 const bg = idx % 2 === 0 ? WHITE : LGRAY
                 tRows.push([
                     { text: r.description, options: { fill: bg, fontSize: 10 } },
-                    { text: r.probabilite.toUpperCase(), options: { fill: bg, fontSize: 10, bold: true, align: "center" as const, color: r.probabilite === 'forte' ? "991B1B" : "854F0B" } },
-                    { text: r.impact.toUpperCase(), options: { fill: bg, fontSize: 10, bold: true, align: "center" as const, color: ['eleve','critique'].includes(r.impact) ? "991B1B" : "854F0B" } },
+                    { text: r.probabilite.toUpperCase(), options: { fill: bg, fontSize: 10, bold: true, align: "center" as HAlign, color: r.probabilite === 'forte' ? "991B1B" : "854F0B" } },
+                    { text: r.impact.toUpperCase(), options: { fill: bg, fontSize: 10, bold: true, align: "center" as HAlign, color: ['eleve','critique'].includes(r.impact) ? "991B1B" : "854F0B" } },
                     { text: r.mesure_attenuation || "Suivi régulier des indicateurs.", options: { fill: bg, fontSize: 10 } }
                 ])
             })
@@ -394,7 +393,7 @@ export async function GET(req: NextRequest) {
             s.addText(q.t, { x: q.x + 0.2, y: q.y + 0.15, w: 5.4, h: 0.3, fontSize: 11, bold: true, color: NAVY, fontFace: "Calibri" })
             s.addText(q.text, {
                 x: q.x + 0.2, y: q.y + 0.5, w: 5.4, h: 1.8,
-                fontSize: 10, color: "111827", fontFace: "Calibri", wrap: true, valign: "top", lineHeight: 1.3
+                fontSize: 10, color: "111827", fontFace: "Calibri", wrap: true, valign: "top"
             })
         })
     }
@@ -420,11 +419,11 @@ export async function GET(req: NextRequest) {
             s.addShape('rect', { x, y: 1.8, w: pW, h: 4.8, fill: { color: LGRAY }, line: { color: "E5E7EB" } })
             s.addShape('rect', { x, y: 1.8, w: pW, h: 0.08, fill: { color: NAVY }, line: { color: NAVY } })
 
-            s.addText(cat.toUpperCase(), { x: x + 0.1, y: 2.0, w: pW - 0.2, h: 0.3, fontSize: 11, bold: true, color: NAVY, fontFace: "Calibri", align: "center" as const })
+            s.addText(cat.toUpperCase(), { x: x + 0.1, y: 2.0, w: pW - 0.2, h: 0.3, fontSize: 11, bold: true, color: NAVY, fontFace: "Calibri", align: "center" as HAlign })
             
             s.addText(`· ${filtered}`, {
                 x: x + 0.1, y: 2.4, w: pW - 0.2, h: 4.0,
-                fontSize: 9.5, color: "374151", fontFace: "Calibri", wrap: true, valign: "top", lineHeight: 1.3
+                fontSize: 9.5, color: "374151", fontFace: "Calibri", wrap: true, valign: "top"
             })
         })
     }
@@ -441,12 +440,12 @@ export async function GET(req: NextRequest) {
 
         s.addText("Rejoignez-nous dans cette transformation", {
             x: 0.5, y: 1.2, w: SW - 1, h: 0.5,
-            fontSize: 28, bold: true, color: ORANGE, fontFace: "Calibri", align: "center" as const
+            fontSize: 28, bold: true, color: ORANGE, fontFace: "Calibri", align: "center" as HAlign
         })
 
         s.addText("Créons ensemble de la valeur durable et propulsons l'excellence opérationnelle.", {
             x: 0.5, y: 1.9, w: SW - 1, h: 0.4,
-            fontSize: 13, color: WHITE, fontFace: "Calibri", align: "center" as const, italic: true
+            fontSize: 13, color: WHITE, fontFace: "Calibri", align: "center" as HAlign, italic: true
         })
 
         // 3 Piliers de conclusion
@@ -482,7 +481,7 @@ export async function GET(req: NextRequest) {
         // Contact footer
         s.addText(`${profil?.localisation || 'Lomé, Togo'} - ${ent}`, {
             x: 0.5, y: SH - 0.6, w: SW - 1, h: 0.25,
-            fontSize: 9, color: "A8C4E0", fontFace: "Calibri", align: "center" as const,
+            fontSize: 9, color: "A8C4E0", fontFace: "Calibri", align: "center" as HAlign,
         })
     }
 
