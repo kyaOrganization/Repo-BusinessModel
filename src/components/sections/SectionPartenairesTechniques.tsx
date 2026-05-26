@@ -33,7 +33,7 @@ export default function SectionPartenairesTechniques({ projetId, onSave }: Props
     }
 
     const ajouter = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('partenaires_techniques')
             .insert([{ projet_id: projetId, nom: 'Nouveau Partenaire', type: '', role: '' }])
             .select().single()
