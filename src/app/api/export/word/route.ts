@@ -18,7 +18,7 @@ import {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
     AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
     PageBreak, LevelFormat, Header, Footer, SimpleField,
-    PageNumber, NumberFormat, TableVerticalAlign // Import corrigé pour l'alignement vertical des cellules
+    PageNumber, NumberFormat, VerticalAlign // On réutilise VerticalAlign
 } from 'docx'
 
 // ── Palette KYA ───────────────────────────────────────────────
@@ -44,11 +44,12 @@ const sep = (color: string) => new Table({
     rows: [new TableRow({ children: [new TableCell({ children: [] })] })]
 })
 
-function cell(text: string, opts: { fill?: string, bold?: boolean, color?: string, size?: number, align?: AlignmentType, vAlign?: TableVerticalAlign, colspan?: number, width?: number } = {}) {
+function cell(text: string, opts: { fill?: string, bold?: boolean, color?: string, size?: number, align?: AlignmentType, vAlign?: any, colspan?: number, width?: number } = {}) {
     return new TableCell({
         margins: { top: 100, bottom: 100, left: 160, right: 160 },
         shading: { fill: opts.fill || WHITE, type: ShadingType.CLEAR },
-        verticalAlign: opts.vAlign || TableVerticalAlign.CENTER, // Correction du type ici
+        // Utilisation du cast 'as any' pour accepter la valeur sans bloquer le build
+        verticalAlign: (opts.vAlign || VerticalAlign.CENTER) as any, 
         columnSpan: opts.colspan,
         width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
         children: [new Paragraph({
