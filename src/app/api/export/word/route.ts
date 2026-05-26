@@ -1,6 +1,5 @@
 /**
- * EXPORT WORD — route.ts v3.2 (Correction finale Type Check)
- * Fichier : src/app/api/export/word/route.ts
+ * EXPORT WORD — route.ts
  *
  * Design calqué sur le document de référence KYA-SolDesign :
  * - Page de garde avec fiche synoptique (tableau bleu navy)
@@ -44,7 +43,6 @@ const sep = (color: string) => new Table({
     rows: [new TableRow({ children: [new TableCell({ children: [] })] })]
 })
 
-// Correction ici : align utilise désormais 'any' pour éviter l'erreur de référence de valeur/type de docx
 function cell(text: string, opts: { fill?: string, bold?: boolean, color?: string, size?: number, align?: any, vAlign?: any, colspan?: number, width?: number } = {}) {
     return new TableCell({
         margins: { top: 100, bottom: 100, left: 160, right: 160 },
@@ -80,12 +78,18 @@ function h2(text: string) {
 
 function txt(text: string, bold = false) {
     return new Paragraph({
+        // Utilisation sécurisée de ALIGNMENT_TYPE et cast 'as any' pour le build
         alignment: (AlignmentType.JUSTIFIED || "both") as any,
-        spacing: { before: 60, after: 60 },
-        lineSpacing: { before: 40, line: 276 }, // Intraligne agréable 1.15
+        // Correction de la leçon apprise : l'interligne (line) s'intègre au coeur de l'objet 'spacing'
+        spacing: { 
+            before: 60, 
+            after: 60, 
+            line: 276 // Équivaut à un interligne agréable de 1.15
+        },
         children: [new TextRun({ text, font: "Calibri", size: 21, bold })]
     })
 }
+
 const fmt = (v: number | null | undefined): string => {
     if (v === undefined || v === null) return '0'
     return new Intl.NumberFormat('fr-FR').format(Math.round(v))
