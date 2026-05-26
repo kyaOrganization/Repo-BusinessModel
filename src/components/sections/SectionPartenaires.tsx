@@ -79,7 +79,7 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
     }
     const ajouterTechnique = async () => {
         const { data } = await supabase.from('partenaires_techniques').insert([{
-            projet_id: projetId, nom: 'Nouveau Partenaire Tech', domaine: 'Solaire', role: 'Fournisseur'
+            projet_id: projetId, nom: 'Nouveau Partenaire Tech', type: 'Technique', role: 'Fournisseur'
         }]).select().single()
         if (data) setTech(prev => [...prev, data])
     }
@@ -95,11 +95,24 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
     // --- ONGLETS CUSTOM (chargés depuis la DB) ---
     const fetchOnglets = async () => {
         const { data } = await supabase
-            .from('type_onglet_partenaire')
+            .from('types_onglets_partenaires')
             .select('*')
             .eq('projet_id', projetId)
             .order('ordre')
-        if (data) setOnglets(data)
+        if (data && data.length > 0) {
+            setOnglets(data)
+        } else {
+            // Auto-créer les onglets par défaut si la table est vide pour ce projet
+            const defaults = [
+                { projet_id: projetId, label: 'Partenaires Institutionnels / Étatiques', ordre: 1 },
+                { projet_id: projetId, label: 'Partenaires Commerciaux / Clients Clés', ordre: 2 },
+            ]
+            const { data: created } = await supabase
+                .from('types_onglets_partenaires')
+                .insert(defaults)
+                .select()
+            if (created) setOnglets(created)
+        }
     }
 
     // --- CUSTOM CATEGORIES (AUTRES) ---
@@ -297,7 +310,7 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
                             {tech.map((t, idx) => (
                                 <tr key={t.id} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                                     <td style={{ padding: '8px' }}><input type="text" value={t.nom} onChange={e => updateTech(t.id, 'nom', e.target.value)} style={inp} /></td>
-                                    <td style={{ padding: '8px' }}><input type="text" value={t.domaine ?? ''} onChange={e => updateTech(t.id, 'domaine', e.target.value)} placeholder="Ex: R&D, Solaire, IoT" style={inp} /></td>
+                                    <td style={{ padding: '8px' }}><input type="text" value={t.type ?? ''} onChange={e => updateTech(t.id, 'type', e.target.value)} placeholder="Ex: Solaire, IoT, R&D" style={inp} /></td>
                                     <td style={{ padding: '8px' }}><input type="text" value={t.role ?? ''} onChange={e => updateTech(t.id, 'role', e.target.value)} placeholder="Ex: Co-développement, Intégrateur" style={inp} /></td>
                                     <td style={{ padding: '8px', textAlign: 'center' }}>
                                         <button onClick={() => supprimerTech(t.id)} style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>

@@ -35,8 +35,9 @@ export default function SectionPartenairesTechniques({ projetId, onSave }: Props
     const ajouter = async () => {
         const { data } = await supabase
             .from('partenaires_techniques')
-            .insert([{ projet_id: projetId, nom: 'Nouveau Partenaire', domaine: '', role: '' }])
+            .insert([{ projet_id: projetId, nom: 'Nouveau Partenaire', type: '', role: '' }])
             .select().single()
+        if (error) { console.error('[PT]', error); alert('Erreur : ' + error.message); return }
         if (data) setPartenaires(prev => [...prev, data])
     }
 
@@ -99,8 +100,8 @@ export default function SectionPartenairesTechniques({ projetId, onSave }: Props
                                     <label style={{ fontSize: '11px', fontWeight: 600, color: '#4B5563', display: 'block', marginBottom: '4px' }}>
                                         Domaine d'expertise
                                     </label>
-                                    <input type="text" value={partenaire.domaine || ''}
-                                           onChange={e => update(partenaire.id, 'domaine', e.target.value)}
+                                    <input type="text" value={partenaire.type || ''}
+                                           onChange={e => update(partenaire.id, 'type', e.target.value)}
                                            placeholder="Ex : Systèmes solaires hybrides, IoT"
                                            style={inputStyle} />
                                 </div>
