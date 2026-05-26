@@ -80,13 +80,12 @@ function h2(text: string) {
 
 function txt(text: string, bold = false) {
     return new Paragraph({
-        alignment: AlignmentType.JUSTIFY,
+        alignment: (AlignmentType.JUSTIFIED || "both") as any,
         spacing: { before: 60, after: 60 },
         lineSpacing: { before: 40, line: 276 }, // Intraligne agréable 1.15
         children: [new TextRun({ text, font: "Calibri", size: 21, bold })]
     })
 }
-
 const fmt = (v: number | null | undefined): string => {
     if (v === undefined || v === null) return '0'
     return new Intl.NumberFormat('fr-FR').format(Math.round(v))
