@@ -199,6 +199,7 @@ export interface PartenaireTechnique {
     role?: string
     apport?: string
     contact?: string
+    domaine?: string
 }
 
 export interface TypeOngletPartenaire {
