@@ -1,5 +1,6 @@
 /**
- * EXPORT WORD — route.ts
+ * EXPORT WORD — route.ts v3.4 (Correction finale validée pour le Type Check)
+ * Fichier : src/app/api/export/word/route.ts
  *
  * Design calqué sur le document de référence KYA-SolDesign :
  * - Page de garde avec fiche synoptique (tableau bleu navy)
@@ -47,7 +48,7 @@ function cell(text: string, opts: { fill?: string, bold?: boolean, color?: strin
     return new TableCell({
         margins: { top: 100, bottom: 100, left: 160, right: 160 },
         shading: { fill: opts.fill || WHITE, type: ShadingType.CLEAR },
-        // Utilisation de 'as any' pour bypasser le conflit de type de l'enum VerticalAlign
+        // Leçon 1 : Utilisation de 'as any' pour l'alignement vertical
         verticalAlign: (opts.vAlign || VerticalAlign.CENTER) as any, 
         columnSpan: opts.colspan,
         width: opts.width ? { size: opts.width, type: WidthType.DXA } : undefined,
@@ -78,13 +79,13 @@ function h2(text: string) {
 
 function txt(text: string, bold = false) {
     return new Paragraph({
-        // Utilisation sécurisée de ALIGNMENT_TYPE et cast 'as any' pour le build
+        // Leçon 2 : Alignement par JUSTIFIED avec fallback "both"
         alignment: (AlignmentType.JUSTIFIED || "both") as any,
-        // Correction de la leçon apprise : l'interligne (line) s'intègre au coeur de l'objet 'spacing'
+        // Leçon 3 : L'interligne (line) est encapsulé au cœur de l'objet 'spacing'
         spacing: { 
             before: 60, 
             after: 60, 
-            line: 276 // Équivaut à un interligne agréable de 1.15
+            line: 276 
         },
         children: [new TextRun({ text, font: "Calibri", size: 21, bold })]
     })
@@ -127,7 +128,8 @@ export async function GET(req: NextRequest) {
         sections: [{
             properties: {
                 page: {
-                    margins: { top: 1440, bottom: 1440, left: 1440, right: 1440 } // Marges standardisées 2.54cm
+                    // Leçon 4 : Correction du log ici - 'margin' au singulier sans "s"
+                    margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } 
                 }
             },
             headers: {
