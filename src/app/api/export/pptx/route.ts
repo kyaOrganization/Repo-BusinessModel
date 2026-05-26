@@ -87,7 +87,6 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "L'identifiant du projet est requis" }, { status: 400 })
     }
 
-    // Correction apportée ici : ajout de l'await pour résoudre la promesse du client Supabase
     const supabase = await createClient()
 
     // Récupération des données métiers du projet
@@ -128,7 +127,7 @@ export async function GET(req: NextRequest) {
         // Sous-titre Business Model
         s.addText("DOSSIER DE PRÉSENTATION STRATÉGIQUE & FINANCIÈRE", {
             x: 1.0, y: 3.1, w: SW - 2, h: 0.4,
-            fontSize: 14, bold: true, color: WHITE, fontFace: "Calibri", letterSpacing: 1.5
+            fontSize: 14, bold: true, color: WHITE, fontFace: "Calibri", charSpacing: 2
         })
 
         // Description / Pitch de l'entreprise
