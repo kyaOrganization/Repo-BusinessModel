@@ -23,7 +23,7 @@ import * as path from 'path'
 
 // ── Palette ───────────────────────────────────────────────────
 const NAVY   = "0D2B55"
-const ORANGE = \"F0A02B\"
+const ORANGE = "F0A02B"
 const TEAL   = "169B86"
 const WHITE  = "FFFFFF"
 const LGRAY  = "F3F4F6"
