@@ -38,6 +38,7 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
     const [fin, setFin]       = useState<PartenaireFinancier[]>([])
     const [tech, setTech]     = useState<PartenaireTechnique[]>([])
     const [custom, setCustom] = useState<PartenaireCustom[]>([])
+    const [onglets, setOnglets] = useState<TypeOngletPartenaire[]>([])
     const [saved, setSaved]   = useState(false)
 
     const supabase = createClient()
@@ -46,6 +47,7 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
         fetchFinanciers()
         fetchTechniques()
         fetchCustoms()
+        fetchOnglets()
     }, [projetId])
 
     // --- FINANCIERS ---
@@ -90,6 +92,16 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
         setTech(prev => prev.filter(p => p.id !== id))
     }
 
+    // --- ONGLETS CUSTOM (chargés depuis la DB) ---
+    const fetchOnglets = async () => {
+        const { data } = await supabase
+            .from('type_onglet_partenaire')
+            .select('*')
+            .eq('projet_id', projetId)
+            .order('ordre')
+        if (data) setOnglets(data)
+    }
+
     // --- CUSTOM CATEGORIES (AUTRES) ---
     const fetchCustoms = async () => {
         const { data } = await supabase.from('partenaires_custom').select('*').eq('projet_id', projetId).order('created_at')
@@ -110,11 +122,14 @@ export default function SectionPartenaires({ projetId, onSave }: Props) {
         setCustom(prev => prev.filter(p => p.id !== itemId))
     }
 
-    // Données en dur pour la structure des onglets personnalisés
-    const listCustomCategories = [
-        { id: 'institutionnels', label: 'Partenaires Institutionnels / Étatiques' },
-        { id: 'commerciaux',    label: 'Partenaires Commerciaux / Clients Clés' },
-    ]
+    // Onglets dynamiques chargés depuis la DB (table type_onglet_partenaire)
+    // Fallback sur deux onglets par défaut si la table est vide
+    const listCustomCategories = onglets.length > 0
+        ? onglets.map(o => ({ id: o.id, label: o.label }))
+        : [
+            { id: 'institutionnels', label: 'Partenaires Institutionnels / Étatiques' },
+            { id: 'commerciaux',    label: 'Partenaires Commerciaux / Clients Clés' },
+          ]
 
     const tabStyle = (active: boolean) => ({
         padding: '10px 20px', fontSize: '13px', fontWeight: 600,
