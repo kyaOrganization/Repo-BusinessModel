@@ -33,11 +33,11 @@ const ODD_LIST = [
     { num: '17', label: 'Partenariats' },
 ]
 
-const CAT_COLORS: Record<string, { bg: string; color: string; icon: string }> = {
-    'Environnemental': { bg: '#E1F5EE', color: '#0F6E56', icon: '🌿' },
-    'Social':          { bg: '#E6F1FB', color: '#185FA5', icon: '👥' },
-    'Économique':      { bg: '#FFF3DC', color: '#854F0B', icon: '💼' },
-    'Technologique':   { bg: '#F3E8FF', color: '#6B21A8', icon: '⚡' },
+const CAT_COLORS: Record<string, { bg: string; color: string; prefix: string }> = {
+    'Environnemental': { bg: '#E1F5EE', color: '#0F6E56', prefix: 'ENV' },
+    'Social':          { bg: '#E6F1FB', color: '#185FA5', prefix: 'SOC' },
+    'Économique':      { bg: '#FFF3DC', color: '#854F0B', prefix: 'ECO' },
+    'Technologique':   { bg: '#F3E8FF', color: '#6B21A8', prefix: 'TEC' },
 }
 
 export default function SectionImpacts({ projetId, onSave }: Props) {
@@ -100,7 +100,9 @@ export default function SectionImpacts({ projetId, onSave }: Props) {
                     const count = impacts.filter(i => i.categorie === cat).length
                     return (
                         <div key={cat} style={{ backgroundColor: conf.bg, borderRadius: '10px', padding: '14px 16px' }}>
-                            <p style={{ fontSize: '20px', margin: '0 0 4px' }}>{conf.icon}</p>
+                            <p style={{ fontSize: '11px', fontWeight: 700, color: conf.color, margin: '0 0 4px', letterSpacing: '0.5px' }}>
+                                [{conf.prefix}]
+                            </p>
                             <p style={{ fontSize: '11px', color: conf.color, margin: '0 0 2px', fontWeight: 600 }}>{cat}</p>
                             <p style={{ fontSize: '20px', fontWeight: 700, color: conf.color, margin: 0 }}>{count} indicateur{count > 1 ? 's' : ''}</p>
                         </div>
@@ -116,7 +118,6 @@ export default function SectionImpacts({ projetId, onSave }: Props) {
                     <div key={cat} style={{ marginBottom: '24px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '18px' }}>{conf.icon}</span>
                                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: conf.color, margin: 0 }}>
                                     Impact {cat}
                                 </h3>
@@ -184,8 +185,8 @@ export default function SectionImpacts({ projetId, onSave }: Props) {
                                             </td>
                                             <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                                                 <button onClick={() => supprimer(item.id)}
-                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '16px' }}>
-                                                    ×
+                                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '16px', fontWeight: 'bold' }}>
+                                                    A
                                                 </button>
                                             </td>
                                         </tr>
@@ -199,7 +200,7 @@ export default function SectionImpacts({ projetId, onSave }: Props) {
             })}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
-                {saved && <span style={{ fontSize: '13px', color: '#169B86', alignSelf: 'center' }}>✓ Sauvegardé</span>}
+                {saved && <span style={{ fontSize: '13px', color: '#169B86', alignSelf: 'center' }}>Sauvegardé</span>}
                 <button
                     onClick={() => { setSaved(true); onSave(); setTimeout(() => setSaved(false), 2000) }}
                     style={{

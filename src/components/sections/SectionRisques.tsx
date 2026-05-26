@@ -26,12 +26,12 @@ const NIVEAU_CONFIG: Record<string, { bg: string; color: string }> = {
 const PROB_CONFIG: Record<string, { bg: string; color: string }> = {
     'faible':  { bg: '#E1F5EE', color: '#0F6E56' },
     'moyenne': { bg: '#FFF3DC', color: '#854F0B' },
-    'elevee':  { bg: '#FEE2E2', color: '#991B1B' },
+    'forte':   { bg: '#FEE2E2', color: '#991B1B' },
 }
 
 export default function SectionRisques({ projetId, onSave }: Props) {
     const [risques, setRisques] = useState<RisqueProjet[]>([])
-    const [saved, setSaved]     = useState(false)
+    const [saved, setSaved] = useState(false)
     const supabase = createClient()
 
     useEffect(() => { fetchData() }, [projetId])
@@ -50,9 +50,10 @@ export default function SectionRisques({ projetId, onSave }: Props) {
             .from('risques_projet')
             .insert([{
                 projet_id: projetId,
-                description: 'Nouveau risque',
-                probabilite: 'moyenne',
-                niveau_risque: 'modere',
+                description: 'Nouveau risque identifié',
+                probabilite: 'faible',
+                impact: 'faible',
+                mesure_attenuation: ''
             }])
             .select().single()
         if (data) setRisques(prev => [...prev, data])
@@ -68,13 +69,6 @@ export default function SectionRisques({ projetId, onSave }: Props) {
         setRisques(prev => prev.filter(r => r.id !== id))
     }
 
-    const stats = [
-        { label: 'Total',    value: risques.length,                                              color: '#0D2B55' },
-        { label: 'Critiques', value: risques.filter(r => r.niveau_risque === 'critique').length, color: '#991B1B' },
-        { label: 'Élevés',   value: risques.filter(r => r.niveau_risque === 'eleve').length,    color: '#E24B4A' },
-        { label: 'Modérés',  value: risques.filter(r => r.niveau_risque === 'modere').length,   color: '#F0A02B' },
-    ]
-
     return (
         <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
@@ -83,155 +77,80 @@ export default function SectionRisques({ projetId, onSave }: Props) {
                     backgroundColor: '#F0A02B',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '12px', fontWeight: 700, color: '#fff', flexShrink: 0
-                }}>11</div>
+                }}>09</div>
                 <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
-                    Risques du projet
+                    Analyse des Risques
                 </h2>
             </div>
             <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '24px', paddingLeft: '44px' }}>
-                Identifiez les risques, évaluez leur probabilité et définissez les mesures de mitigation.
+                Identifiez les risques majeurs (techniques, financiers, opérationnels) liés au projet et détaillez les mesures d'atténuation.
             </p>
 
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
-                {stats.map(s => (
-                    <div key={s.label} style={{ backgroundColor: '#F9FAFB', borderRadius: '10px', padding: '14px 16px', border: '1px solid #E5E7EB' }}>
-                        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 4px' }}>{s.label}</p>
-                        <p style={{ fontSize: '24px', fontWeight: 700, color: s.color, margin: 0 }}>{s.value}</p>
-                    </div>
-                ))}
-            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                {risques.map((risque) => {
+                    const cImpact = NIVEAU_CONFIG[risque.impact] || { bg: '#F3F4F6', color: '#374151' }
+                    const cProb   = PROB_CONFIG[risque.probabilite] || { bg: '#F3F4F6', color: '#374151' }
 
-            {/* Liste des risques */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
-                {risques.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#F9FAFB', borderRadius: '12px', color: '#9CA3AF' }}>
-                        <p style={{ fontSize: '14px' }}>Aucun risque identifié</p>
-                        <p style={{ fontSize: '12px', marginTop: '4px' }}>Cliquez sur "+ Ajouter un risque" pour commencer</p>
-                    </div>
-                ) : risques.map((r, i) => {
-                    const niv  = NIVEAU_CONFIG[r.niveau_risque || 'modere'] || NIVEAU_CONFIG['modere']
-                    const prob = PROB_CONFIG[r.probabilite || 'moyenne']    || PROB_CONFIG['moyenne']
                     return (
-                        <div key={r.id} style={{
-                            backgroundColor: '#F9FAFB', borderRadius: '12px',
-                            border: `1px solid ${r.niveau_risque === 'critique' ? '#FCA5A5' : '#E5E7EB'}`,
-                            padding: '18px'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '20px' }}>
-                    {r.niveau_risque === 'critique' ? '🔴' : r.niveau_risque === 'eleve' ? '🟠' : r.niveau_risque === 'modere' ? '🟡' : '🟢'}
-                  </span>
-                                    <div>
-                                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{r.description}</p>
-                                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 600, padding: '1px 8px', borderRadius: '20px', backgroundColor: niv.bg, color: niv.color }}>
-                        {r.niveau_risque ? r.niveau_risque.charAt(0).toUpperCase() + r.niveau_risque.slice(1) : '—'}
-                      </span>
-                                            <span style={{ fontSize: '10px', fontWeight: 600, padding: '1px 8px', borderRadius: '20px', backgroundColor: prob.bg, color: prob.color }}>
-                        Prob. {r.probabilite || '—'}
-                      </span>
-                                            {r.categorie && (
-                                                <span style={{ fontSize: '10px', padding: '1px 8px', borderRadius: '20px', backgroundColor: '#F3F4F6', color: '#4B5563' }}>
-                          {r.categorie}
-                        </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <button onClick={() => supprimer(r.id)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '20px' }}>
-                                    ×
-                                </button>
-                            </div>
+                        <div key={risque.id}
+                             style={{
+                                 border: '1px solid #E5E7EB', borderRadius: '12px',
+                                 padding: '16px', backgroundColor: '#F9FAFB',
+                                 position: 'relative'
+                             }}>
+                            <button onClick={() => supprimer(risque.id)}
+                                    style={{
+                                        position: 'absolute', top: '12px', right: '12px',
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        color: '#EF4444', fontSize: '12px', fontWeight: 600
+                                    }}>
+                                Supprimer
+                            </button>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '12px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                                 <div>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Description</label>
-                                    <input type="text" value={r.description}
-                                           onChange={e => update(r.id, 'description', e.target.value)}
+                                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#4B5563', display: 'block', marginBottom: '4px' }}>
+                                        Description du risque
+                                    </label>
+                                    <input type="text" value={risque.description}
+                                           onChange={e => update(risque.id, 'description', e.target.value)}
+                                           placeholder="Ex : Retard de livraison des équipements"
                                            style={inputStyle} />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Catégorie</label>
-                                    <div>
-                                        <select value={r.categorie || ''}
-                                                onChange={e => update(r.id, 'categorie', e.target.value)}
-                                                style={{ ...inputStyle, cursor: 'pointer' }}>
-                                            <option value="">Choisir</option>
-                                            <option value="Financier">Financier</option>
-                                            <option value="Technique">Technique</option>
-                                            <option value="Marché">Marché</option>
-                                            <option value="Réglementaire">Réglementaire</option>
-                                            <option value="Opérationnel">Opérationnel</option>
-                                            <option value="Environnemental">Environnemental</option>
-                                            <option value="Autre">Autre</option>
-                                        </select>
-
-                                        {r.categorie === 'Autre' && (
-                                            <input
-                                                type="text"
-                                                value={r.categorie_libre || ''}
-                                                onChange={e => update(r.id, 'categorie_libre', e.target.value)}
-                                                placeholder="Précisez la catégorie..."
-                                                style={{ ...inputStyle, marginTop: '6px', borderColor: '#F0A02B' }}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Responsable</label>
-                                    <input type="text" value={r.responsable || ''}
-                                           onChange={e => update(r.id, 'responsable', e.target.value)}
-                                           placeholder="Ex : Chef de projet"
-                                           style={inputStyle} />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '12px' }}>
-                                <div>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Probabilité</label>
-                                    <select value={r.probabilite || 'moyenne'}
-                                            onChange={e => update(r.id, 'probabilite', e.target.value)}
-                                            style={{ ...inputStyle, cursor: 'pointer' }}>
-                                        <option value="faible">Faible</option>
-                                        <option value="moyenne">Moyenne</option>
-                                        <option value="elevee">Élevée</option>
+                                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#4B5563', display: 'block', marginBottom: '4px' }}>
+                                        Probabilité
+                                    </label>
+                                    <select value={risque.probabilite}
+                                            onChange={e => update(risque.id, 'probabilite', e.target.value)}
+                                            style={{ ...inputStyle, backgroundColor: cProb.bg, color: cProb.color, fontWeight: 600, cursor: 'pointer' }}>
+                                        <option value="faible" style={{ backgroundColor: '#fff', color: '#111827' }}>Faible</option>
+                                        <option value="moyenne" style={{ backgroundColor: '#fff', color: '#111827' }}>Moyenne</option>
+                                        <option value="forte" style={{ backgroundColor: '#fff', color: '#111827' }}>Forte</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Impact</label>
-                                    <select value={r.impact || ''}
-                                            onChange={e => update(r.id, 'impact', e.target.value)}
-                                            style={{ ...inputStyle, cursor: 'pointer' }}>
-                                        <option value="">Choisir</option>
-                                        <option value="Faible">Faible</option>
-                                        <option value="Modéré">Modéré</option>
-                                        <option value="Élevé">Élevé</option>
-                                        <option value="Critique">Critique</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>Niveau de risque</label>
-                                    <select value={r.niveau_risque || 'modere'}
-                                            onChange={e => update(r.id, 'niveau_risque', e.target.value)}
-                                            style={{ ...inputStyle, cursor: 'pointer', borderColor: niv.bg }}>
-                                        <option value="faible">Faible</option>
-                                        <option value="modere">Modéré</option>
-                                        <option value="eleve">Élevé</option>
-                                        <option value="critique">Critique</option>
+                                    <label style={{ fontSize: '11px', fontWeight: 600, color: '#4B5563', display: 'block', marginBottom: '4px' }}>
+                                        Impact
+                                    </label>
+                                    <select value={risque.impact}
+                                            onChange={e => update(risque.id, 'impact', e.target.value)}
+                                            style={{ ...inputStyle, backgroundColor: cImpact.bg, color: cImpact.color, fontWeight: 600, cursor: 'pointer' }}>
+                                        <option value="faible" style={{ backgroundColor: '#fff', color: '#111827' }}>Faible</option>
+                                        <option value="modere" style={{ backgroundColor: '#fff', color: '#111827' }}>Modéré</option>
+                                        <option value="eleve" style={{ backgroundColor: '#fff', color: '#111827' }}>Élevé</option>
+                                        <option value="critique" style={{ backgroundColor: '#fff', color: '#111827' }}>Critique</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div>
-                                <label style={{ fontSize: '12px', fontWeight: 500, color: '#374151', display: 'block', marginBottom: '5px' }}>
-                                    Mesure de mitigation
+                                <label style={{ fontSize: '11px', fontWeight: 600, color: '#169B86', display: 'block', marginBottom: '4px' }}>
+                                    Mesure d'atténuation / Plan de contingence
                                 </label>
-                                <textarea value={r.mesure_mitigation || ''}
-                                          onChange={e => update(r.id, 'mesure_mitigation', e.target.value)}
-                                          placeholder="Comment réduire ou éliminer ce risque..."
+                                <textarea value={risque.mesure_attenuation || ''}
+                                          onChange={e => update(risque.id, 'mesure_attenuation', e.target.value)}
+                                          placeholder="Actions entreprises pour réduire la probabilité ou l'impact de ce risque..."
                                           rows={2}
                                           style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6, borderColor: '#169B86' }} />
                             </div>
@@ -251,7 +170,7 @@ export default function SectionRisques({ projetId, onSave }: Props) {
             </button>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
-                {saved && <span style={{ fontSize: '13px', color: '#169B86', alignSelf: 'center' }}>✓ Sauvegardé</span>}
+                {saved && <span style={{ fontSize: '13px', color: '#169B86', alignSelf: 'center' }}>Sauvegardé</span>}
                 <button
                     onClick={() => { setSaved(true); onSave(); setTimeout(() => setSaved(false), 2000) }}
                     style={{
