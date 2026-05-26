@@ -1,5 +1,5 @@
 /**
- * 10 slides structurées :
+ * 10 slides structurées selon le brief :
  * 1. Présentation KYA-Energy Group
  * 2. Présentation du projet
  * 3. Hypothèses clés (TAM/SAM/SOM + marché + financières)
@@ -87,7 +87,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "L'identifiant du projet est requis" }, { status: 400 })
     }
 
-    const supabase = createClient()
+    // Correction apportée ici : ajout de l'await pour résoudre la promesse du client Supabase
+    const supabase = await createClient()
 
     // Récupération des données métiers du projet
     const { data: projet } = await supabase.from('projets').select('*').eq('id', id).single()
