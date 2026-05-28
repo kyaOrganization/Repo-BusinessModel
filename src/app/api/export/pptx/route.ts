@@ -80,7 +80,7 @@ function addFooter(s: Slide, entNom: string) {
 // ── Point d'entrée de l'API Next.js ────────────────────────────
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
+    const id = searchParams.get('id') || searchParams.get('projetId')
 
     if (!id) {
         return NextResponse.json({ error: "L'identifiant du projet est requis" }, { status: 400 })

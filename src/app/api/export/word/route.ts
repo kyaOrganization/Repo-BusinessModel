@@ -87,7 +87,7 @@ const fmt = (v: number | null | undefined): string => {
 // ── Point d'entrée principal de l'API ──────────────────────────
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
+    const id = searchParams.get('id') || searchParams.get('projetId')
 
     if (!id) {
         return NextResponse.json({ error: "L'identifiant du projet est requis" }, { status: 400 })
