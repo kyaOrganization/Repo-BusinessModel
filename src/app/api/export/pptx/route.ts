@@ -310,7 +310,7 @@ export async function GET(req: NextRequest) {
         const buffer = await pres.write({ outputType: 'nodebuffer' })
         const fn = (projet.nom || 'Presentation').replace(/\s+/g, '_')
 
-        return new NextResponse(new Uint8Array(buffer), {
+        return new NextResponse(new Uint8Array(buffer as any), {
             headers: {
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                 'Content-Disposition': `attachment; filename="BusinessModel_${fn}.pptx"`

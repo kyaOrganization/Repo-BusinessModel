@@ -477,13 +477,14 @@ export async function GET(req: NextRequest) {
             }]
         })
 
-            await pres.write({ outputType: 'nodebuffer' }) as unknown as Buffer
-            const fn = (projet.nom || 'Presentation').replace(/\s+/g, '_')
+            const buffer = await doc.write({ outputType: 'nodebuffer' })
+            const nom  = (projet.nom || 'BusinessModel').replace(/\s+/g, '_')
+            const date = new Date().toISOString().split('T')[0]
 
-            return new NextResponse(new Uint8Array(buffer), {
+            return new NextResponse(new Uint8Array(buffer as any), {
                 headers: {
-                    'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                    'Content-Disposition': `attachment; filename="BusinessModel_${fn}.pptx"`
+                    'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'Content-Disposition': `attachment; filename="PlanAffaires_${nom}_${date}.docx"`
                 }
             })
 
