@@ -177,7 +177,6 @@ export default function SectionPrevisions({ projetId, onSave }: Props) {
                 projet: {
                     annee_demarrage: proj.annee_demarrage ?? 2026,
                     duree_projet:    proj.duree_projet ?? 5,
-                    prorata_annee1:  proj.prorata_annee1 ?? 1.0,
                 },
                 hypotheses:  hyps ?? [],
                 capexItems:  (capexData ?? []).map(c => ({
