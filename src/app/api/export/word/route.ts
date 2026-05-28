@@ -477,16 +477,16 @@ export async function GET(req: NextRequest) {
             }]
         })
 
-            const buffer = await doc.write({ outputType: 'nodebuffer' })
-            const nom  = (projet.nom || 'BusinessModel').replace(/\s+/g, '_')
-            const date = new Date().toISOString().split('T')[0]
+        const buffer = await Packer.toUint8Array(doc)
+        const nom  = (projet.nom || 'BusinessModel').replace(/\s+/g, '_')
+        const date = new Date().toISOString().split('T')[0]
 
-            return new NextResponse(new Uint8Array(buffer as any), {
-                headers: {
+        return new NextResponse(new Uint8Array(buffer as any), {
+            headers: {
                     'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'Content-Disposition': `attachment; filename="PlanAffaires_${nom}_${date}.docx"`
-                }
-            })
+            }
+        })
 
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err)
