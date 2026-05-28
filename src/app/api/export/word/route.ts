@@ -477,14 +477,14 @@ export async function GET(req: NextRequest) {
             }]
         })
 
-        const buffer = await Packer.toUint8Array(doc)
+        const blob = await Packer.toBlob(doc)
         const nom  = (projet.nom || 'BusinessModel').replace(/\s+/g, '_')
         const date = new Date().toISOString().split('T')[0]
 
-        return new NextResponse(new Uint8Array(buffer as any), {
+        return new NextResponse(blob, {
             headers: {
-                    'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'Content-Disposition': `attachment; filename="PlanAffaires_${nom}_${date}.docx"`
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition': `attachment; filename="BusinessModel_${nom}_${date}.docx"`
             }
         })
 
