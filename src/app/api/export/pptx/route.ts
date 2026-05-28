@@ -317,7 +317,7 @@ export async function GET(req: NextRequest) {
         return new NextResponse(new Uint8Array(buffer as any), {
             headers: {
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'Content-Disposition': `attachment; filename="Presentation_${nom}.pptx";
+                'Content-Disposition': `attachment; filename="Presentation_${nom}.pptx"`
             }
         })
 
