@@ -104,7 +104,7 @@ export default function SectionProduits({ projetId, onSave }: Props) {
         setComposants(prev => ({ ...prev, [produitId]: prev[produitId].filter(c => c.id !== composantId) }))
     }
 
-    const calculerCoutRevient = (produitId: string, margeSecurite: number) => {
+    const calculerCoutVente = (produitId: string, margeSecurite: number) => {
         const comps = composants[produitId] || []
         const total = comps.reduce((sum, c) => sum + (c.quantite * c.prix_unitaire), 0)
         return total * (1 + margeSecurite)
@@ -112,7 +112,7 @@ export default function SectionProduits({ projetId, onSave }: Props) {
 
     const produitActifData = produits.find(p => p.id === produitActif)
     const compsActifs      = produitActif ? (composants[produitActif] || []) : []
-    const coutRevient      = produitActif ? calculerCoutRevient(produitActif, produitActifData?.marge_securite || 0.1) : 0
+    const coutVente      = produitActif ? calculerCoutVente(produitActif, produitActifData?.marge_securite || 0.1) : 0
 
     const formatNum = (n: number) => new Intl.NumberFormat('fr-FR').format(Math.round(n))
 
@@ -365,7 +365,7 @@ export default function SectionProduits({ projetId, onSave }: Props) {
                                     display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px'
                                 }}>
                                     <div>
-                                        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 4px' }}>Coût composants</p>
+                                        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 4px' }}>Coût de revient</p>
                                         <p style={{ fontSize: '16px', fontWeight: 700, color: '#111827', margin: 0 }}>
                                             {formatNum(compsActifs.reduce((s, c) => s + c.quantite * c.prix_unitaire, 0))} {' '}
                                             <span style={{ fontSize: '11px', fontWeight: 400, color: '#9CA3AF' }}>FCFA</span>
@@ -381,9 +381,9 @@ export default function SectionProduits({ projetId, onSave }: Props) {
                                         </p>
                                     </div>
                                     <div>
-                                        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 4px' }}>Coût de revient</p>
+                                        <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '0 0 4px' }}>Coût de vente</p>
                                         <p style={{ fontSize: '16px', fontWeight: 700, color: '#169B86', margin: 0 }}>
-                                            {formatNum(coutRevient)} {' '}
+                                            {formatNum(coutVente)} {' '}
                                             <span style={{ fontSize: '11px', fontWeight: 400, color: '#9CA3AF' }}>FCFA</span>
                                         </p>
                                     </div>

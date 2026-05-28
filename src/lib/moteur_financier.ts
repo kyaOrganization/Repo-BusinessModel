@@ -14,7 +14,6 @@
 export interface ProjetInput {
     annee_demarrage: number
     duree_projet: number
-    prorata_annee1: number  // 1.0 = démarrage jan, 0.5 = mi-année
 }
 
 export interface HypotheseInput {
@@ -157,7 +156,6 @@ function amortissementAnnuel(
     c: CapexInput,
     annee: number,
     anneeDebut: number,
-    prorata: number
 ): number {
     const methode = c.methode_amort ?? 'lineaire'
     if (methode === 'non_amorti') return 0
@@ -173,10 +171,6 @@ function amortissementAnnuel(
 
     const amortBrut = c.montant / duree
 
-    // Prorata la 1ère année d'exploitation si acquisition avant démarrage
-    if (annee === anneeDebut && acqAnnee < anneeDebut) {
-        return amortBrut * prorata
-    }
 
     return amortBrut
 }
@@ -186,11 +180,10 @@ function vncFinAnnee(
     c: CapexInput,
     annee: number,
     anneeDebut: number,
-    prorata: number
 ): number {
     let cumul = 0
     for (let a = anneeDebut; a <= annee; a++) {
-        cumul += amortissementAnnuel(c, a, anneeDebut, prorata)
+        cumul += amortissementAnnuel(c, a, anneeDebut)
     }
     return Math.max(0, c.montant - cumul - (c.valeur_residuelle ?? 0))
 }
@@ -309,7 +302,7 @@ export function calculerPrevisions(params: {
     const pctCoord     = hyp(hypotheses, 'frais_coordination', 0.01)
     const pctRD        = hyp(hypotheses, 'frais_rd', 0.01)
 
-    const { annee_demarrage, duree_projet, prorata_annee1 } = projet
+    const { annee_demarrage, duree_projet } = projet
 
     // ── Timeline ────────────────────────────────────────────────
     const annees = Array.from({ length: duree_projet }, (_, i) => annee_demarrage + i)
@@ -317,13 +310,12 @@ export function calculerPrevisions(params: {
     // ── CAPEX total ─────────────────────────────────────────────
     const totalCapex = capexItems.reduce((s, c) => s + c.montant, 0)
 
-    // ── Coût de revient unitaire par produit ────────────────────
-    // CORRECTION : calculé depuis les composants (pas déduit du CA)
+    // ── Coût de revient unitaire par produit calculé depuis les composants ────────────────────
     const coutUnitParProduit = new Map<string, number>()
     for (const p of produits) {
         const comps = composants.filter(c => c.produit_id === p.id)
         const coutBase = comps.reduce((s, c) => s + c.quantite * c.prix_unitaire, 0)
-        coutUnitParProduit.set(p.id, coutBase * (1 + p.marge_securite))
+        coutUnitParProduit.set(p.id, coutBase)
     }
 
     // ── Détection des catégories d'OPEX présentes en DB ─────────
@@ -351,7 +343,7 @@ export function calculerPrevisions(params: {
 
     for (const annee of annees) {
         const anneeIdx = annee - annee_demarrage  // 0-based
-        const prorata  = anneeIdx === 0 ? prorata_annee1 : 1.0
+
 
         // ── CA et Coût de revient ──────────────────────────────────
         let caTotal = 0
@@ -365,8 +357,6 @@ export function calculerPrevisions(params: {
             caTotal += rev.volume * rev.prix_unitaire_ht
             coutRevientTotal += rev.volume * (coutUnitParProduit.get(p.id) ?? 0)
         }
-        caTotal          *= prorata
-        coutRevientTotal *= prorata
 
         const margeBrute    = caTotal - coutRevientTotal
         const margeBrutePct = caTotal > 0 ? margeBrute / caTotal : 0
@@ -382,7 +372,7 @@ export function calculerPrevisions(params: {
             const v = calcOpexAnnee(
                 o, annee, annee_demarrage, caTotal,
                 totalCapex, volumesParProduit, opexManuels
-            ) * prorata
+            )
 
             const cat = o.categorie?.toLowerCase() ?? ''
             if (['personnel', 'rh', 'salaire', 'main d\'oeuvre'].some(k => cat.includes(k))) {
@@ -411,7 +401,7 @@ export function calculerPrevisions(params: {
         const ebitdaPct = caTotal > 0 ? ebitda / caTotal : 0
 
         const dotationAmort = capexItems.reduce(
-            (s, c) => s + amortissementAnnuel(c, annee, annee_demarrage, prorata_annee1), 0
+            (s, c) => s + amortissementAnnuel(c, annee, annee_demarrage), 0
         )
 
         const ebit = ebitda - dotationAmort
@@ -453,7 +443,7 @@ export function calculerPrevisions(params: {
 
         // ── Bilan ──────────────────────────────────────────────────
         const vcnFin = capexItems.reduce(
-            (s, c) => s + vncFinAnnee(c, annee, annee_demarrage, prorata_annee1), 0
+            (s, c) => s + vncFinAnnee(c, annee, annee_demarrage), 0
         )
         dettesRestantes = Math.max(0, dettesRestantes - remboursementCap)
         capitauxPropres += resultatNet
