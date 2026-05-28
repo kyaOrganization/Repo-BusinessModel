@@ -298,7 +298,7 @@ export async function GET(req: NextRequest) {
             ctaList.forEach((cta, i) => {
                 const x = 1.1 + i * 4.0
                 const ctaY = 2.8
-                s.addShape('rect', { x, y: ctaY, w: cW, h: 2.4, fill: { color: "transparent" }, line: { color: cta.color, width: 1.5 } })
+                s.addShape('rect', { x, y: ctaY, w: cW, h: 2.4, fill: { color: "none" }, line: { color: cta.color, width: 1.5 } })
                 s.addShape('rect', { x, y: ctaY, w: cW, h: 0.07, fill: { color: cta.color }, line: { color: cta.color } })
                 s.addText(cta.title, { x: x + 0.1, y: ctaY + 0.1, w: cW - 0.2, h: 0.35, fontSize: 10, bold: true, color: cta.color, fontFace: "Calibri" })
                 s.addText(cta.body,  { x: x + 0.1, y: ctaY + 0.48, w: cW - 0.2, h: 1.62, fontSize: 10, color: WHITE, fontFace: "Calibri", wrap: true, valign: "top" })
@@ -308,12 +308,16 @@ export async function GET(req: NextRequest) {
 
         // ── Génération du buffer et envoi ──────────────────────────────
         const buffer = await pres.write({ outputType: 'nodebuffer' })
-        const fn = (projet.nom || 'Presentation').replace(/\s+/g, '_')
+        const nom = (projet.nom || 'Presentation')
+            .replace(/[^\x00-\x7F]/g, '')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .trim() || 'Presentation'
 
         return new NextResponse(new Uint8Array(buffer as any), {
             headers: {
                 'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'Content-Disposition': `attachment; filename="BusinessModel_${fn}.pptx"`
+                'Content-Disposition': `attachment; filename="BusinessModel_${nom}.pptx"; filename*=UTF-8''BusinessModel_${encodeURIComponent(projet.nom || 'Presentation')}.pptx`
             }
         })
 

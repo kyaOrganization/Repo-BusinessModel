@@ -478,7 +478,11 @@ export async function GET(req: NextRequest) {
         })
 
         const blob = await Packer.toBlob(doc)
-        const nom  = (projet.nom || 'BusinessModel').replace(/\s+/g, '_')
+        const nom  = (projet.nom || 'BusinessModel')
+            .replace(/[^\x00-\x7F]/g, '')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .trim() || 'BusinessModel'
         const date = new Date().toISOString().split('T')[0]
 
         return new NextResponse(blob, {
