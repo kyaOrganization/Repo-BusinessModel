@@ -39,8 +39,6 @@ export default function SectionInformations({ projet, onSave }: Props) {
         promoteur:         projet.promoteur ?? '',
         cout_total:        projet.cout_total ?? 0,
         pays_execution:    projet.pays_execution ?? '',
-        // ▼ NOUVEAU v2 : fraction d'année la 1ère année (1 = jan, 0.5 = juillet)
-        prorata_annee1:    projet.prorata_annee1 ?? 1.0,
     })
     const supabase = createClient()
 
@@ -56,10 +54,6 @@ export default function SectionInformations({ projet, onSave }: Props) {
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
     }
-
-    // Mois de démarrage calculé à partir du prorata
-    const moisDemarrage = Math.round((1 - form.prorata_annee1) * 12) + 1
-    const nomMois = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
 
     return (
         <div>
@@ -175,52 +169,6 @@ export default function SectionInformations({ projet, onSave }: Props) {
                     </div>
                 </div>
 
-                {/* ▼ NOUVEAU v2 : Prorata temporis */}
-                <div style={{
-                    backgroundColor: '#F9FAFB', borderRadius: '12px',
-                    border: '1px solid #E5E7EB', padding: '18px',
-                }}>
-                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#0D2B55', margin: '0 0 12px' }}>
-                        ⚙️ Prorata temporis — Première année
-                    </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', alignItems: 'center' }}>
-                        <div>
-                            <label style={lbl}>
-                                Mois de démarrage
-                                <span style={{ fontWeight: 400, color: '#9CA3AF', marginLeft: '8px' }}>
-                  (Jan = 1, Déc = 12)
-                </span>
-                            </label>
-                            <select
-                                value={moisDemarrage}
-                                onChange={e => {
-                                    const mois = parseInt(e.target.value)
-                                    // prorata = fraction d'année restante après le mois de démarrage
-                                    // mois 1 (jan) = 12/12 = 1.0, mois 7 (jul) = 6/12 = 0.5
-                                    const prorata = (13 - mois) / 12
-                                    f('prorata_annee1', Math.round(prorata * 100) / 100)
-                                }}
-                                style={{ ...inp, cursor: 'pointer' }}
-                            >
-                                {nomMois.map((m, i) => <option key={i} value={i + 1}>{m} ({i + 1})</option>)}
-                            </select>
-                        </div>
-                        <div style={{ backgroundColor: '#E6F1FB', borderRadius: '10px', padding: '14px 16px' }}>
-                            <p style={{ fontSize: '12px', color: '#185FA5', margin: 0 }}>
-                                <strong>Prorata appliqué : {(form.prorata_annee1 * 100).toFixed(0)}%</strong> de l&apos;année
-                            </p>
-                            <p style={{ fontSize: '11px', color: '#6B7280', margin: '4px 0 0' }}>
-                                Si le projet démarre en <strong>{nomMois[moisDemarrage - 1]}</strong>{' '}
-                                {form.annee_demarrage}, le CA et les charges de l&apos;An 1 seront multipliés
-                                par <strong>{form.prorata_annee1.toFixed(2)}</strong> dans le moteur de calcul.
-                            </p>
-                            <p style={{ fontSize: '11px', color: '#6B7280', margin: '4px 0 0' }}>
-                                Exemple : si CA annuel prévu = 100 M FCFA, le CA An 1 calculé sera{' '}
-                                <strong>{(100 * form.prorata_annee1).toFixed(1)} M FCFA</strong>.
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '8px' }}>
                     {saved && <span style={{ fontSize: '13px', color: '#169B86', alignSelf: 'center' }}>✓ Sauvegardé</span>}
