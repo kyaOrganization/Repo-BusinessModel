@@ -14,7 +14,7 @@
  * Design : palette KYA (Navy #0D2B55 / Orange #F0A02B / Teal #169B86)
  * Motif : fond blanc, encadrés couleur, typo Calibri, sans émojis
  */
-
+export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/superbase/server' 
 import pptxgen from 'pptxgenjs'
@@ -79,13 +79,13 @@ function addFooter(s: Slide, entNom: string) {
 
 // ── Point d'entrée de l'API Next.js ────────────────────────────
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id') || searchParams.get('projetId')
+    try {
+        const { searchParams } = new URL(req.url)
+        const id = searchParams.get('id') || searchParams.get('projetId')
 
-    if (!id) {
-        return NextResponse.json({ error: "L'identifiant du projet est requis" }, { status: 400 })
-    }
-
+        if (!id) {
+            return NextResponse.json({ error: "ID requis" }, { status: 400 })
+        }
     const supabase = await createClient()
 
     // Récupération des données métiers du projet
@@ -486,13 +486,20 @@ export async function GET(req: NextRequest) {
     }
 
     // ── Génération du buffer et envoi du flux PPTX ──────────────────
-    const buffer = await pres.write({ outputType: 'nodebuffer' }) as Buffer
-
+    const buffer = await pres.write('nodebuffer')   // ← sans l'objet
     const fn = (projet.nom || 'Presentation').replace(/\s+/g, '_')
+
     return new NextResponse(new Uint8Array(buffer), {
         headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
             'Content-Disposition': `attachment; filename="BusinessModel_${fn}.pptx"`
         }
     })
+
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        const stack   = err instanceof Error ? err.stack   : ''
+        console.error('[EXPORT 500]', message, stack)
+        return NextResponse.json({ error: message, stack }, { status: 500 })
+    }
 }
